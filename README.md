@@ -1,4 +1,11 @@
-# Sample Hardhat Project
+# Stablecoin
+
+
+## Technologies
+- Solidity
+- Vue (Frontend) 
+
+### Sample Hardhat Project
 
 ```shell
 # compile the solidity code

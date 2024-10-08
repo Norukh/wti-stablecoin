@@ -8,7 +8,7 @@ yarn hardhat compile
 yarn hardhat node
 
 # deploy to localhost
-yarn hardhat run scripts/deploy.js --network localhost 
+yarn hardhat run scripts/deploy.ts --network localhost 
 ```
 
 This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.

@@ -12,9 +12,8 @@ async function main() {
   // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
   // await hre.run('compile');
-
   // We get the contract to deploy
-  const vendingMachine = await ethers.deployContract("VendingMachine");
+  const vendingMachine = await ethers.deployContract("WTIStablecoin");
   await vendingMachine.waitForDeployment();
 
   console.log(`Cupcake vending machine deployed to ${vendingMachine.target}`);

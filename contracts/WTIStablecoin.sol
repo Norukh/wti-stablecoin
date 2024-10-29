@@ -1,135 +1,98 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+// Compatible with OpenZeppelin Contracts ^5.0.0
+pragma solidity ^0.8.20;
 
-// Importing Chainlink's AggregatorV3Interface for the price feed
-interface AggregatorV3Interface {
-    function latestRoundData() external view returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    );
-}
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract WTIStablecoin {
-    string public name = "WTIStablecoin";
-    string public symbol = "WTI";
-    uint8 public decimals = 18;
-    uint256 public totalSupply;
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
+import "hardhat/console.sol";
 
-    address public owner;
-    AggregatorV3Interface internal priceFeed;  // Chainlink WTI price feed
+contract WTIStablecoin is ERC20, ERC20Burnable, ERC20Pausable, Ownable {
+    AggregatorV3Interface internal priceFeed;
 
-    // Collateral mapping (e.g., ETH collateral used to mint WTI)
-    mapping(address => uint256) public collateral;
+    uint256 public cachedFeedPrice;
+    uint256 public lastPriceFetchTime;
+    uint256 public priceFetchCooldown = 0.5 hours;
 
-    // Price of 1 WTI token in USD (can be pegged to 1 barrel of oil)
-    uint256 public constant pricePerWTI = 100 * 1e18;  // 100 USD as example
+    constructor(
+        address initialOwner,
+        address priceFeedAddress
+    ) ERC20("WTI Stablecoin", "WTIS") Ownable(initialOwner) {
+        _mint(initialOwner, 1000000 * 10 ** decimals());
 
-    // Events
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Mint(address indexed user, uint256 amount);
-    event Burn(address indexed user, uint256 amount);
-
-    constructor(address _priceFeed) {
-        owner = msg.sender;
-        priceFeed = AggregatorV3Interface(_priceFeed); // Initialize the WTI price oracle
+        /* Testing SPY/USD price feed
+         * Network: Arbitrum Sepolia
+         * Address: 0x4fB44FC4FA132d1a846Bd4143CcdC5a9f1870b06
+         */
+        priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not the contract owner");
-        _;
+    function pause() public onlyOwner {
+        _pause();
     }
 
-    // Function to get the latest WTI oil price (in USD)
-    function getLatestWTIPrice() public view returns (int256) {
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+
+    function burn(uint256 amount) public override onlyOwner {
+        _burn(owner(), amount);
+    }
+
+    function rebalance() internal {
+        if (block.timestamp >= lastPriceFetchTime + priceFetchCooldown) {
+            cachedFeedPrice = uint256(getChainlinkPriceFeedLatestAnswer());
+            lastPriceFetchTime = block.timestamp;
+        }
+
+        uint256 targetSupply = (totalSupply() * cachedFeedPrice) / 1e8;
+
+        if (totalSupply() > targetSupply) {
+            uint256 excessAmount = totalSupply() - targetSupply;
+            _burn(owner(), excessAmount);
+        } else if (totalSupply() < targetSupply) {
+            uint256 mintAmount = targetSupply - totalSupply();
+            _mint(owner(), mintAmount);
+        }
+    }
+
+    function transfer(
+        address to,
+        uint256 amount
+    ) public override returns (bool) {
+        bool success = super.transfer(to, amount);
+        if (success) {
+            rebalance();
+        }
+        return success;
+    }
+
+    // The following functions are overrides required by Solidity.
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override(ERC20, ERC20Pausable) {
+        super._update(from, to, value);
+    }
+
+    function getChainlinkPriceFeedLatestAnswer() public view returns (int) {
         (
             ,
-            int256 price,
+            /* uint80 roundId */ int answer /* uint startedAt */ /* uint timeStamp */ /* uint80 answeredInRound */,
             ,
             ,
 
         ) = priceFeed.latestRoundData();
-        return price;  // Price will have 8 decimals as Chainlink reports in 8 decimals
-    }
-
-    // Function to mint new WTI tokens based on collateral
-    function mint(uint256 collateralAmount) public {
-        // Ensure the user provides collateral (e.g., ETH, or another accepted asset)
-        require(collateralAmount > 0, "Collateral amount must be greater than 0");
-
-        // Get the current WTI price
-        int256 wtiPrice = getLatestWTIPrice();
-        require(wtiPrice > 0, "Invalid WTI price");
-
-        // Calculate how many WTI tokens the user can mint
-        uint256 mintAmount = (collateralAmount * uint256(wtiPrice)) / pricePerWTI;
-
-        // Mint the WTI tokens to the user's account
-        balanceOf[msg.sender] += mintAmount;
-        totalSupply += mintAmount;
-
-        // Update the collateral record
-        collateral[msg.sender] += collateralAmount;
-
-        emit Mint(msg.sender, mintAmount);
-    }
-
-    // Function to burn WTI tokens and reclaim collateral
-    function burn(uint256 burnAmount) public {
-        require(balanceOf[msg.sender] >= burnAmount, "Not enough WTI balance");
-
-        // Get the current WTI price
-        int256 wtiPrice = getLatestWTIPrice();
-        require(wtiPrice > 0, "Invalid WTI price");
-
-        // Calculate how much collateral to return based on burned WTI tokens
-        uint256 collateralReturn = (burnAmount * pricePerWTI) / uint256(wtiPrice);
-
-        // Burn the WTI tokens from the user's balance
-        balanceOf[msg.sender] -= burnAmount;
-        totalSupply -= burnAmount;
-
-        // Return the corresponding collateral
-        require(collateral[msg.sender] >= collateralReturn, "Not enough collateral");
-        collateral[msg.sender] -= collateralReturn;
-
-        // Logic to return collateral (e.g., transfer ETH or other assets)
-        // Example: payable(msg.sender).transfer(collateralReturn);
-
-        emit Burn(msg.sender, burnAmount);
-    }
-
-    // Transfer function (standard ERC-20 functionality)
-    function transfer(address to, uint256 value) public returns (bool) {
-        require(balanceOf[msg.sender] >= value, "Insufficient balance");
-        balanceOf[msg.sender] -= value;
-        balanceOf[to] += value;
-        emit Transfer(msg.sender, to, value);
-        return true;
-    }
-
-    // Approve and transferFrom functions for allowance (standard ERC-20)
-    function approve(address spender, uint256 value) public returns (bool) {
-        allowance[msg.sender][spender] = value;
-        emit Approval(msg.sender, spender, value);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
-        require(balanceOf[from] >= value, "Insufficient balance");
-        require(allowance[from][msg.sender] >= value, "Allowance exceeded");
-
-        balanceOf[from] -= value;
-        balanceOf[to] += value;
-        allowance[from][msg.sender] -= value;
-
-        emit Transfer(from, to, value);
-        return true;
+        require(answer > 0, "Invalid price feed answer");
+        return answer;
     }
 }

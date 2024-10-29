@@ -1,17 +1,19 @@
 {
     "name": "TypeScript Solidity Dev Container",
-    "build": {
-      "dockerfile": "Dockerfile"
-    },
+    "dockerComposeFile": "docker.compose.yml",
+    "service": "vscode-container",
+    "workspaceFolder": "/workspace",
+    "shutdownAction": "stopCompose",
     "customizations": {
       "vscode": {
         "extensions": [
           "dbaeumer.vscode-eslint",
           "esbenp.prettier-vscode",
           "ms-vscode.vscode-typescript-next",
-          "NomicFoundation.hardhat-solidity"
+          "NomicFoundation.hardhat-solidity",
+          "Vue.volar"
         ]
       }
     },
-    "postCreateCommand": "yarn global add @vue/cli typescript && yarn install"
+    "postCreateCommand": "npm install -g yarn && yarn global add @vue/cli typescript && yarn install"
   }

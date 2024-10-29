@@ -1,30 +1,3 @@
-<template>
-    <div class="wti-view">
-        <h1>WTI Stablecoin DApp</h1>
-
-        <!-- Connect Wallet Button -->
-        <button v-if="!account" @click="connectWallet">Connect Wallet</button>
-        <div v-if="account">Connected as: {{ account }}</div>
-
-        <!-- Display WTI Token Information -->
-        <div v-if="account">
-            <h3>Your Balance: {{ wtiBalance }} WTI</h3>
-            <h3>Total Supply: {{ totalSupply }} WTI</h3>
-            <h3>WTI Price (USD): ${{ wtiPrice }}</h3>
-
-            <!-- Mint WTI Tokens Section -->
-            <h2>Mint WTI Tokens</h2>
-            <input v-model="collateralAmount" placeholder="Enter collateral (ETH)" />
-            <button @click="mintWTI">Mint</button>
-
-            <!-- Burn WTI Tokens Section -->
-            <h2>Burn WTI Tokens</h2>
-            <input v-model="burnAmount" placeholder="Enter WTI amount to burn" />
-            <button @click="burnWTI">Burn</button>
-        </div>
-    </div>
-</template>
-
 <script>
 import { ethers } from "ethers";
 
@@ -137,6 +110,33 @@ export default {
     },
 };
 </script>
+
+<template>
+    <div class="wti-view">
+        <h1>WTI Stablecoin DApp</h1>
+
+        <!-- Connect Wallet Button -->
+        <button v-if="!account" @click="connectWallet">Connect Wallet</button>
+        <div v-if="account">Connected as: {{ account }}</div>
+
+        <!-- Display WTI Token Information -->
+        <div v-if="account">
+            <h3>Your Balance: {{ wtiBalance }} WTI</h3>
+            <h3>Total Supply: {{ totalSupply }} WTI</h3>
+            <h3>WTI Price (USD): ${{ wtiPrice }}</h3>
+
+            <!-- Mint WTI Tokens Section -->
+            <h2>Mint WTI Tokens</h2>
+            <input v-model="collateralAmount" placeholder="Enter collateral (ETH)" />
+            <button @click="mintWTI">Mint</button>
+
+            <!-- Burn WTI Tokens Section -->
+            <h2>Burn WTI Tokens</h2>
+            <input v-model="burnAmount" placeholder="Enter WTI amount to burn" />
+            <button @click="burnWTI">Burn</button>
+        </div>
+    </div>
+</template>
 
 <style scoped>
 .wti-view {

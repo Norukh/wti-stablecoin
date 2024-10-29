@@ -13,10 +13,17 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
   // We get the contract to deploy
-  const vendingMachine = await ethers.deployContract("WTIStablecoin");
-  await vendingMachine.waitForDeployment();
+  const [owner] = await ethers.getSigners();
 
-  console.log(`Cupcake vending machine deployed to ${vendingMachine.target}`);
+  // https://sepolia.arbiscan.io/address/0x4fB44FC4FA132d1a846Bd4143CcdC5a9f1870b06
+  // SPY/USD price feed
+  const priceFeedAddress = "0x4fB44FC4FA132d1a846Bd4143CcdC5a9f1870b06";
+
+  const stablecoinContract = await ethers.deployContract("WTIStablecoin", [owner.address, priceFeedAddress]);
+  await stablecoinContract.waitForDeployment();
+
+  console.log(`WTI Stablecoin deployed to ${stablecoinContract.target}`);
+  console.log(`WTI Stablecoin deployed by owning address ${owner.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

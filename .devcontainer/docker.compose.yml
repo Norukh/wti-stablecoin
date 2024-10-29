@@ -1,0 +1,12 @@
+version: "3"
+services:
+  vscode-container:
+    image: mcr.microsoft.com/vscode/devcontainers/typescript-node:latest
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    volumes:
+      - ..:/workspace
+      - ~/.ssh:/home/node/.ssh
+      - /etc/localtime:/etc/localtime
+    ports:
+      - 3000:3000
+      - 1337:1337

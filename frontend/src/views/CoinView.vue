@@ -7,7 +7,7 @@ let balance = ref(null)
 
 let tokenAmount = ref(0)
 
-let provider
+let provider : any
 
 async function connectWallet() {
   if (window.ethereum == null) {

@@ -6,11 +6,13 @@ defineProps<{
 
 <template>
   <div class="greetings">
-    <h1 class="green">{{ msg }}</h1>
+    <h1>{{ msg }}</h1>
     <h3>
-      You’ve successfully created a project with
-      <a href="https://vitejs.dev/" target="_blank" rel="noopener">Vite</a> +
-      <a href="https://vuejs.org/" target="_blank" rel="noopener">Vue 3</a>. What's next?
+      The world's first Stablecoin of crude oil!
+      <ul>
+        <li><a href="https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html" target="_blank" rel="noopener">WTI information</a></li>
+        <li><a href="https://www.investing.com/commodities/crude-oil" target="_blank" rel="noopener">WTI Stats</a></li>
+      </ul>
     </h3>
   </div>
 </template>
@@ -21,6 +23,7 @@ h1 {
   font-size: 2.6rem;
   position: relative;
   top: -10px;
+  color: var(--color-heading);
 }
 
 h3 {

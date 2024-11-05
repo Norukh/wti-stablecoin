@@ -19,6 +19,10 @@ yarn hardhat node
 
 # deploy to localhost
 yarn hardhat run scripts/deploy.ts --network localhost 
+
+# set variables
+yarn hardhat vars set ARBITRUM_PRIVATE_KEY <your-private-key>
+yarn hardhat vars set ARBITRUM_SEPOLIA_API_KEY <your-api-key>
 ```
 
 This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.

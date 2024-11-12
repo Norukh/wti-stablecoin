@@ -23,12 +23,7 @@ contract WTIStablecoin is ERC20, ERC20Burnable, ERC20Pausable, Ownable {
         address priceFeedAddress
     ) ERC20("WTI Stablecoin", "WTIS") Ownable(initialOwner) {
         _mint(initialOwner, 1000000 * 10 ** decimals());
-
-        /* Testing SPY/USD price feed
-         * Network: Arbitrum Sepolia
-         * Address: 0x4fB44FC4FA132d1a846Bd4143CcdC5a9f1870b06
-         */
-        priceFeed = AggregatorV3Interface(priceFeedAddress);
+        setPriceFeedAddress(priceFeedAddress);
     }
 
     function pause() public onlyOwner {
@@ -49,7 +44,7 @@ contract WTIStablecoin is ERC20, ERC20Burnable, ERC20Pausable, Ownable {
 
     function rebalance() internal {
         if (block.timestamp >= lastPriceFetchTime + priceFetchCooldown) {
-            cachedFeedPrice = uint256(getChainlinkPriceFeedLatestAnswer());
+            cachedFeedPrice = uint256(getPriceFeedLatestAnswer());
             lastPriceFetchTime = block.timestamp;
         }
 
@@ -84,7 +79,7 @@ contract WTIStablecoin is ERC20, ERC20Burnable, ERC20Pausable, Ownable {
         super._update(from, to, value);
     }
 
-    function getChainlinkPriceFeedLatestAnswer() public view returns (int) {
+    function getPriceFeedLatestAnswer() public view returns (int) {
         (
             ,
             /* uint80 roundId */ int answer /* uint startedAt */ /* uint timeStamp */ /* uint80 answeredInRound */,
@@ -94,5 +89,9 @@ contract WTIStablecoin is ERC20, ERC20Burnable, ERC20Pausable, Ownable {
         ) = priceFeed.latestRoundData();
         require(answer > 0, "Invalid price feed answer");
         return answer;
+    }
+
+    function setPriceFeedAddress(address priceFeedAddress) public onlyOwner {
+        priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 }

@@ -1,10 +1,8 @@
-import os
 from flask import Flask, jsonify, request
 import sqlite3
-
 app = Flask(__name__)
 
-# Setup SQLite database and create a table with one entry for tracking oil quantity
+
 def init_db():
     # Use an absolute path to ensure the database location is well-defined
     db_path = '/backend/src/Oil.db'
@@ -21,7 +19,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Endpoint to get the current quantity of oil
+
 @app.route('/oil', methods=['GET'])
 def get_entries():
     db_path = '/backend/src/Oil.db'
@@ -35,7 +33,7 @@ def get_entries():
     else:
         return jsonify({"error": "Oil entry not found"}), 404
 
-# Endpoint to update the quantity of oil
+
 @app.route('/oil', methods=['POST'])
 def update_entry():
     update_data = request.get_json()
@@ -54,4 +52,5 @@ def update_entry():
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True, host='0.0.0.0')
+    app.run(use_reloader=False, host='0.0.0.0')
+

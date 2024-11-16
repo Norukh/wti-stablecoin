@@ -18,9 +18,26 @@ body {
 a,
 .green {
   text-decoration: none;
-  color: hsla(52, 72%, 75%, 1);
+  color: hsla(52 , 72%, 75%, 1);
   transition: 0.4s;
   padding: 3px;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  background-color: hsla(42, 45%, 57%, 1);
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+
+button:hover {
+  background-color: var(--vt-c-indigo);
+  border-color: var(--lool);
 }
 
 @media (hover: hover) {

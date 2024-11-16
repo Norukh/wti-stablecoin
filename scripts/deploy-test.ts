@@ -6,13 +6,13 @@ async function main() {
     //
     // If this script is run directly using `node` you may want to call compile
     // manually to make sure everything is compiled
-    // await hre.run('compile');
     // We get the contract to deploy
+
     const [owner] = await ethers.getSigners();
     console.log(`Deploying contracts with the account: ${owner.address}`);    
 
     const initialPrice = ethers.parseUnits("60", 8);
-    const mockAggregator = await ethers.deployContract("MockAggregator", [initialPrice, 8]);
+    const mockAggregator = await ethers.deployContract("MockAggregator", [owner.address, initialPrice, 8]);
     await mockAggregator.waitForDeployment();
 
     console.log("***********************************");

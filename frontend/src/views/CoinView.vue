@@ -59,6 +59,7 @@ async function redeemToken() {
 
   alert('Redeem token')
 }
+
 </script>
 
 <template>

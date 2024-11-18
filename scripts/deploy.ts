@@ -15,11 +15,8 @@ async function main() {
   // We get the contract to deploy
   const [owner] = await ethers.getSigners();
   console.log(owner);
-  // https://sepolia.arbiscan.io/address/0x4fB44FC4FA132d1a846Bd4143CcdC5a9f1870b06
-  // SPY/USD price feed
-  const priceFeedAddress = "0x4fB44FC4FA132d1a846Bd4143CcdC5a9f1870b06";
 
-  const stablecoinContract = await ethers.deployContract("WTIStablecoin", [owner.address, priceFeedAddress]);
+  const stablecoinContract = await ethers.deployContract("WTIStablecoin", [owner.address]);
   await stablecoinContract.waitForDeployment();
 
   console.log(`WTI Stablecoin deployed to ${stablecoinContract.target}`);

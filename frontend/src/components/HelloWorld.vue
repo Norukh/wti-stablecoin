@@ -8,11 +8,7 @@ defineProps<{
   <div class="greetings">
     <h1>{{ msg }}</h1>
     <h3>
-      The world's first Stablecoin of crude oil!
-      <ul>
-        <li><a href="https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html" target="_blank" rel="noopener">WTI information</a></li>
-        <li><a href="https://www.investing.com/commodities/crude-oil" target="_blank" rel="noopener">WTI Stats</a></li>
-      </ul>
+      The world's first Stablecoin for crude oil!
     </h3>
   </div>
 </template>

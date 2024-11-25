@@ -2,13 +2,12 @@
 import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
-import Menubar from 'primevue/menubar'
+import Menu from 'primevue/menu'
 
 const items = ref([
   { label: 'Home', icon: 'pi pi-fw pi-home', route: '/' },
-  { label: 'Coin', icon: 'pi pi-fw pi-money-bill', route: '/coin' },
   { label: 'About', icon: 'pi pi-fw pi-info-circle', route: '/about' },
-  { label: 'WTI', icon: 'pi pi-fw pi-chart-line', route: '/wti' }
+  { label: 'Stablecoin DApp', icon: 'pi pi-fw pi-chart-line', route: '/wti' }
 ])
 </script>
 
@@ -22,7 +21,7 @@ const items = ref([
       <HelloWorld msg="Introducing WTIST" />
 
       <nav>
-        <Menubar :model="items" class="w-full">
+        <Menu :model="items" class="w-full">
           <template #item="{ item, props, hasSubmenu }">
             <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
               <a v-ripple :href="href" v-bind="props.action" @click="navigate">
@@ -36,7 +35,7 @@ const items = ref([
               <span v-if="hasSubmenu" class="pi pi-fw pi-angle-down" />
             </a>
           </template>
-        </Menubar>
+        </Menu>
       </nav>
     </div>
   </header>

@@ -40,9 +40,9 @@ const switchTokens = () => {
 </script>
 
 <template>
-  <Card style="width: 25rem; overflow: hidden">
+  <Card style="height: auto; max-width: 50vh;" class="m-auto">
     <template #header>
-      <img alt="user header" src="https://picsum.photos/400/200" />
+      <img alt="user header" src="https://picsum.photos/400/100" />
     </template>
     <template #title>Swap WTIST</template>
     <template #subtitle>
@@ -82,32 +82,3 @@ const switchTokens = () => {
     </template>
   </Card>
 </template>
-
-<style>
-.spin:hover {
-  animation: spin 0.3s ease-in-out;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(180deg);
-  }
-}
-
-.grow:hover {
-  animation: grow 0.3s ease-in-out alternate infinite;
-}
-
-@keyframes grow {
-  0% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1.1);
-  }
-}
-
-</style>

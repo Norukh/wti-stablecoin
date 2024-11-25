@@ -15,6 +15,11 @@ const config: HardhatUserConfig = {
       chainId: 421614,
       accounts: [ `${ARBITRUM_PRIVATE_KEY}` ],
     },
+    optimismSepolia: {
+      url: "https://sepolia.optimism.io/",
+      chainId: 11155420,
+      accounts: [ `${ARBITRUM_PRIVATE_KEY}` ],
+    },
   },
   etherscan: {
     apiKey: {

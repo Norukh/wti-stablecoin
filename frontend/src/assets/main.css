@@ -1,18 +1,11 @@
 @import './base.css';
 
+
 #app {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   font-weight: normal;
-}
-
-body {
-  background-image: linear-gradient(to bottom, #333333, #111111);
-  background-size: 100% 100%;
-  height: 100vh;
-  width: 100vw;
-  margin: 0;
 }
 
 a,
@@ -21,29 +14,6 @@ a,
   color: hsla(52 , 72%, 75%, 1);
   transition: 0.4s;
   padding: 3px;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 600;
-  font-family: inherit;
-  background-color: hsla(42, 45%, 57%, 1);
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-
-button:hover {
-  background-color: var(--vt-c-indigo);
-  border-color: var(--lool);
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(42, 45%, 57%, 0.2);
-  }
 }
 
 @media (min-width: 1024px) {
@@ -58,3 +28,7 @@ button:hover {
     padding: 0 2rem;
   }
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

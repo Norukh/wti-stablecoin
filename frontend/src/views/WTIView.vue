@@ -37,6 +37,7 @@ async function connectWallet() {
 
   const abi = [
     'function balanceOf(address owner) external view returns (uint256)',
+    'function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)',
   ]
 
   const contract = new ethers.Contract(contractAddress, abi, signer)
@@ -63,8 +64,6 @@ async function checkWalletConnected() {
     <h1>WTI Stablecoin DApp</h1>
 
     <!-- Connect Wallet Button -->
-
-
     <Button v-if="!account" @click="connectWallet">Connect Wallet</Button>
     <div v-if="account">Connected as: {{ account }}</div>
 
@@ -100,11 +99,5 @@ async function checkWalletConnected() {
   padding: 20px;
   max-width: 600px;
   margin: auto;
-}
-
-input {
-  margin-right: 10px;
-  padding: 5px;
-  border: 1px solid #ccc;
 }
 </style>

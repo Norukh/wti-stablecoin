@@ -1,15 +1,18 @@
 import './assets/main.css'
+import 'primeicons/primeicons.css'
 
 import { createApp } from 'vue'
 
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
+import { RouterLink } from 'vue-router'
 import { definePreset } from '@primevue/themes'
 
 import App from './App.vue'
 import router from './router'
 
 const app = createApp(App)
+app.component('router-link', RouterLink)
 
 const MyPreset = definePreset(Aura, {
   primitive: {
@@ -678,5 +681,4 @@ app.use(PrimeVue, {
   }
 })
 app.use(router)
-
 app.mount('#app')

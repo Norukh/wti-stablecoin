@@ -1,20 +1,41 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
+import Menu from 'primevue/menu'
+
+const items = ref([
+  { label: 'Home', icon: 'pi pi-fw pi-home', route: '/' },
+  { label: 'About', icon: 'pi pi-fw pi-info-circle', route: '/about' },
+  { label: 'Stablecoin DApp', icon: 'pi pi-fw pi-chart-line', route: '/wti' }
+])
 </script>
 
 <template>
   <header>
-    <img alt="WTIST logo" class="logo" src="@/assets/wtist-no-bg.png" width="200"/>
+    <RouterLink to="/">
+      <img alt="WTIST logo" class="logo" src="@/assets/wtist-no-bg.png" width="800" />
+      </RouterLink>
 
     <div class="wrapper">
       <HelloWorld msg="Introducing WTIST" />
 
       <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/coin">Coin</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-        <RouterLink to="/WTI">WTI coin</RouterLink>
+        <Menu :model="items" class="w-full">
+          <template #item="{ item, props, hasSubmenu }">
+            <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+              <a v-ripple :href="href" v-bind="props.action" @click="navigate">
+                <span :class="item.icon" />
+                <span>{{ item.label }}</span>
+              </a>
+            </router-link>
+            <a v-else v-ripple :href="item.url" :target="item.target" v-bind="props.action">
+              <span :class="item.icon" />
+              <span>{{ item.label }}</span>
+              <span v-if="hasSubmenu" class="pi pi-fw pi-angle-down" />
+            </a>
+          </template>
+        </Menu>
       </nav>
     </div>
   </header>
@@ -38,24 +59,6 @@ nav {
   font-size: 12px;
   text-align: center;
   margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
 }
 
 @media (min-width: 1024px) {

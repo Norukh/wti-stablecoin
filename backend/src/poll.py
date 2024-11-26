@@ -4,7 +4,7 @@ import json
 import datetime
 
 infura_url = "https://arbitrum-sepolia.infura.io/v3/617c65d94c2b42d6a5845e2ebc63928a"
-contract_address = "0xB4BC5598b3e291188a35086Ef4EF31A951b7C1b2".lower()
+contract_address = "0x58C653F1d11C3D334c3ee8fe813f4d0A5D5B4A9F".lower()
 
 headers = {
     "Content-Type": "application/json"
@@ -79,7 +79,7 @@ def poll_blockchain():
 
                 # Update the last block number polled and current time
                 last_block = latest_block
-                one_minute_ago = int(time.time()) - 10
+                one_minute_ago = int(time.time()) - 60
 
         else:
             print("Failed to get the latest block number.")

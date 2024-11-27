@@ -6,6 +6,11 @@ import InputGroupAddon from 'primevue/inputgroupaddon'
 import InputText from 'primevue/inputtext'
 import FloatLabel from 'primevue/floatlabel'
 import { ref } from 'vue'
+import { UNISWAP_SWAP_ROUTER_ADDRESSES } from '@/utils/constants'
+
+defineProps({
+  provider: Object,
+})
 
 type Token = {
   symbol: string,
@@ -37,6 +42,22 @@ const switchTokens = () => {
   receiveToken.value = temp
 }
 
+async function swapTokens() {
+  const signer = await provider.getSigner()
+
+  const contractAddress = UNISWAP_SWAP_ROUTER_ADDRESSES['arbSepolia']
+
+  const abi = [
+    'function swapTokens(address tokenA, address tokenB, uint amountA) external'
+  ]
+
+  const contract = new ethers.Contract(contractAddress, abi, signer)
+
+  // todo call contract and swap tokens
+  // see what can be done with result
+
+}
+
 </script>
 
 <template>
@@ -57,7 +78,7 @@ const switchTokens = () => {
             <InputGroupAddon class="w-1/5">{{ payToken.symbol }}</InputGroupAddon>
             <FloatLabel variant="in">
               <InputText id="in_label" v-model="payToken.value" />
-              <label for="in_label">You pay</label>
+              <label for="in_label">Sell</label>
             </FloatLabel>
           </InputGroup>
         </div>
@@ -69,7 +90,7 @@ const switchTokens = () => {
             <InputGroupAddon class="w-1/5">{{ receiveToken.symbol }}</InputGroupAddon>
             <FloatLabel variant="in">
               <InputText id="in_label2" v-model="receiveToken.value" />
-              <label for="in_label2">You receive</label>
+              <label for="in_label2">Buy</label>
             </FloatLabel>
           </InputGroup>
         </div>

@@ -6,6 +6,7 @@ import Menu from 'primevue/menu'
 
 const items = ref([
   { label: 'Home', icon: 'pi pi-fw pi-home', route: '/' },
+  { label: 'Transparency', icon: 'pi pi-fw pi-eye', route: '/transparency' },
   { label: 'About', icon: 'pi pi-fw pi-info-circle', route: '/about' },
   { label: 'Stablecoin DApp', icon: 'pi pi-fw pi-chart-line', route: '/wti' }
 ])

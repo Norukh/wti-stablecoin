@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ethers, formatEther, formatUnits } from 'ethers'
 import { ref } from 'vue'
-import { store } from '@/store/store'
 import { USDC_CONTRACT_ADDRESSES, WTIST_CONTRACT_ADDRESSES } from '@/utils/constants'
-import Toast from 'primevue/toast';
+import Toast from 'primevue/toast'
 
 import SwapWidget from '@/components/SwapWidget.vue'
 import TransferWidget from '@/components/TransferWidget.vue'
@@ -60,9 +59,6 @@ async function connectWallet() {
 
   const unformattedGasPrice = (await provider.getFeeData()).gasPrice
   gasPrice.value = formatUnits(unformattedGasPrice, 'gwei')
-
-  store.setAccount(account.value)
-  store.setBalance(balance.value)
 }
 
 async function checkWalletConnected() {
@@ -99,7 +95,7 @@ async function disconnectWallet() {
   <div class="m-auto">
     <!-- Connect Wallet Button -->
     <div v-if="!account" class="flex flex-col items-center align-middle gap-4 m-auto">
-      <Avatar icon="pi pi-ethereum" shape="circle" size="xlarge" />
+      <Avatar shape="circle" size="xlarge" icon="pi pi-ethereum" class="ether-logo" />
       <span class="text-lg">Connect your Wallet to get started</span>
       <Button v-if="!account" @click="connectWallet">Connect Wallet</Button>
     </div>
@@ -263,7 +259,25 @@ async function disconnectWallet() {
     :style="{ width: '25rem' }"
   >
     <div class="flex items-center mt-4 mb-4">
-      <SwapWidget />
+      <SwapWidget :provider="provider" :balance="Number.parseFloat(balance)" />
     </div>
   </Dialog>
 </template>
+
+<style>
+.ether-logo {
+  animation: spin-ether 5s ease-in-out infinite;
+}
+
+@keyframes spin-ether {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>

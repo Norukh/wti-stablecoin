@@ -3,8 +3,10 @@ import requests
 import json
 import datetime
 
+from constants import WTIST_CONTRACT_ADDRESS
+
 infura_url = "https://arbitrum-sepolia.infura.io/v3/617c65d94c2b42d6a5845e2ebc63928a"
-contract_address = "0x58C653F1d11C3D334c3ee8fe813f4d0A5D5B4A9F".lower()
+contract_address = WTIST_CONTRACT_ADDRESS
 
 headers = {
     "Content-Type": "application/json"

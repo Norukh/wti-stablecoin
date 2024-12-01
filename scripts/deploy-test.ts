@@ -24,7 +24,7 @@ async function main() {
     // setting the mock price feed address
     const priceFeedAddress = mockAggregator.target;
 
-    const stablecoinContract = await ethers.deployContract("WTIStablecoin", [owner.address, priceFeedAddress]);
+    const stablecoinContract = await ethers.deployContract("WTIStablecoin", [owner.address]);
     await stablecoinContract.waitForDeployment();
     
     console.log("***********************************");

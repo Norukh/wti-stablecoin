@@ -1,22 +1,38 @@
-# Stablecoin
+# Western Texas Intermediate Stablecoin
+Symbol: _WTIST_
+Chain: [Arbitrum Sepolia (Testnet)](https://sepolia.arbiscan.io/)
 
-## Overview
+This monorepo consists of the ERC20 solidity contracts for the stablecoin and a simple backend to enable the rebalancing on the stablecoin.
+Read the topics below, to learn more about this project.
 
-The WTI - Stablecoin represents the oil price of "West Texas Intermediate", which is a grade crude oil from the United States.
+This project is a part of the challenge task for the Blockchain module ([BlCh HS-2024](https://dsl.i.ost.ch/lect/hs24/)) at the Eastern Switzerland University of Applied Sciences.
+The challenge tasks was to create a stablecoin that can be traded on a DEX (Decentralized Exchange) and has a rebalancing mechanism.
 
-## Stability
+As required by the task this project contains:
+- A simple frontend (with Vue)
+    - It is able to swap stablecoin
+    - Status and process are shown in the frontend
+- A public blockchain is included (Testnet of L2: Arbitrum Sepolia)
+    - Trading/swapping is possible with Uniswap and Pancakeswap
+- The app does an automatic rebalancing of the stablecoin (described below)
+
+## Concept
+This project is a concept for a stablecoin representing the price of Western Texas Intermediate (WTI) crude oil.
+Western Texas Intermediate is a grade crude oil from the United States.
+
+### Stability
 How do we ensure stability?
 
+TODO:
 - Liquidity Pool
-Idea : - Users can buy / sell coins directly with better fees
 - Over collateralization 10%
 
-Liquidity Mining
-- Staking with uniswap v3 staker
-
 ### Two scenarios
-Price of the WTI asset goes up in the real world:
+We make sure to cover two different scenarios with our stablecoin, where we must counteract automatically with a rebalancing method to keep the price of the targeted asset stable.
 
+#### Price of the WTI asset goes up in the real world
+
+TODO:
 - Mint and put in pool
 - USDC receive
 - price goes up for WTIST
@@ -25,22 +41,70 @@ Price of the WTI asset goes up in the real world:
 - sell real life assets
 - receive 
 
-Price of the WTI asset goes down in the real world:
+#### Price of the WTI asset goes down in the real world
+TODO:
 - We will add liquidity for USDC - WTIST pair
 - Price goes down for WTIST
 - We will sell real-life assets
 
-### Burning / Minting
-We will burn and mint
+### Future Opportunities
+In the future the stablecoin tokenomics can be enhanced by incentivising users to stake their tokens in a liquidity pool with a Uniswap staker.
+Another idea is to offer users of our App the possibility to buy and sell stablecoins directly on the App. 
+This ensures that the users are getting an opportunity to get the stablecoin at the best price possible, even when there are fluctuations on the DEX.
 
-## Technologies
-- Solidity
-- Vue (Frontend) 
+## Infrastructure
+The diagram below explains the infrastructure overview of the dockerized application. 
+Details can be found in the sections below and in the respective folders of the repository for each component.
+
+TODO: add diagram for infrastructure
+
+### Contracts
+The contracts are deployed on the Arbitrum Sepolia chain. 
+This is only a Testnet chain and runs on L2 of Ethereum. 
+There are some advantages of using a layer 2 chain over the Ethereum Blockchain as described in the following [blog](https://medium.com/@floating_monkey/possibilities-and-advantages-of-using-arbitrum-compared-to-ethereum-78a4cafc44d5).
+
+1. Low Fees and Efficient Scalability
+2. Ethereum / EVM compatibility (We could also deploy our contracts on different L2 or on the main chain).
+3. High security level 
+
+More information:
+- [Arbitrum Foundation](https://arbitrum.foundation/)
+- [Arbitrum Website](https://arbitrum.io/)
+
+#### Uniswap contracts
+The uniswap contracts which are deployed on Arbitrum Sepolia are from the official documentation: [Uniswap Contract Deployments](https://docs.uniswap.org/contracts/v3/reference/deployments/arbitrum-deployments).
+
+Below are the contracts we used to create the pool and to use the SwapRouter from Uniswap.
+| **Contract**               | **Arbitrum Sepolia Addresses**               | **Description**                                       |
+|----------------------------|----------------------------------------------|-------------------------------------------------------|
+| UniswapV3Factory           | `0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e` | This contract is used to create token pairs for pools |
+| NonfungiblePositionManager | `0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65` | Used to interact with the Uniswap Liquidity Position  |
+| QuoterV2                   | `0x2779a0CC1c3e0E44D2542EC3e79e3864Ae93Ef0B` | Can be used to get the current price for a token pair |
+| SwapRouter02               | `0x101F443B4d1b059569D643917553c771E1b9663E` | Used to swap between the tokens USDC and WTIST        |
+
+Below are the technical details of our pool to swap between WTIST ↔️ USDC on the frontend.
+| Setting                        | Value                                                                   |
+|--------------------------------|-------------------------------------------------------------------------|
+| Fee                            | `10000`                                                                 |
+| PoolToken (TokenId)            | `1075`                                                                  |
+| Pool (Contract for Token Pair) | `0x2F08A874270c0A07F10af8F6FD71044218c0b2A9` (USDC - WTIST - Fee 10000) |
+| Initial sqrtPriceX96           | `658118545356139461083136`                                              |
+| Initial tick                   | `-233981`                                                               |
+| Tick spacing                   | `200`                                                                   |
+
+
+### Backend
+**Technologies used:** Solidity, Hardhat, multisol
+
+#### REST API
+
+### Frontend
+**Technologies used:** Node, Vue.js, Vite, Typescript, [ethers.js (v6)](https://docs.ethers.org/v6/), [PrimeVue](https://primevue.org/)
 
 To test the ethers.js package open the following website:
 [Ethers Playground](https://playground.ethers.org/)
 
-### Sample Hardhat Project
+## Usage 
 
 ```shell
 # compile the solidity code
@@ -72,3 +136,8 @@ REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/Lock.ts
 ```
+
+## Authors
+- [Nico Fehr](mailto:nico.fehr@ost.ch?subject=WTIST%20Feedback)
+- [Micha Harzbecker](mailto:micha.harzbecker@ost.ch?subject=WTIST%20Feedback)
+- [Tom Stromer](mailto:tom.stromer@ost.ch?subject=WTIST%20Feedback)

@@ -17,7 +17,7 @@ import {
   UNISWAP_POOL_ADDRESSES,
   UNISWAP_QUOTER_ADDRESSES
 } from '@/utils/constants'
-import { convertX96 } from '@/utils/price'
+import { convertX96ToPrice } from '@/utils/price'
 
 const props = defineProps({
   provider: Object,
@@ -25,7 +25,7 @@ const props = defineProps({
 })
 
 const chain = 'arbSepolia'
-const poolFee = 500
+const poolFee = 10000
 
 const isInvalidAmountPay = ref<boolean>(false)
 const isInvalidAmountReceive = ref<boolean>(false)
@@ -135,7 +135,9 @@ async function calculateBuyPrice(isPay = true) {
     })
 
   console.log('Amount out data:', amountOutData)
-  receiveToken.value.value = formatUnits(amountOutData.amountOut, decPay).slice(0, 10)
+
+  const decReceive = receiveToken.value.symbol === 'USDC' ? 6 : 18
+  receiveToken.value.value = formatUnits(amountOutData.amountOut, decReceive).slice(0, 10)
 }
 
 async function swapTokens() {
@@ -172,16 +174,6 @@ async function swapTokens() {
     const wtistApprove = await wtistContract.approve(swapContractAddress, wtistAmount)
     console.log('WTIST approve:', wtistApprove)
   }
-
-  console.log({
-    tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
-    tokenOut: receiveToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
-    fee: poolFee,
-    recipient: await signer.getAddress(),
-    amountIn: payToken.value.symbol === 'USDC' ? usdcAmount : wtistAmount,
-    amountOutMinimum: 0,
-    sqrtPriceLimitX96: 0
-  })
 
   const swap = await swapContract.exactInputSingle({
     tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
@@ -335,7 +327,7 @@ getSwapPrice()
           </p>
           <div class="flex flex-row gap-2 items-center">
             <Button size="small" variant="outlined" icon="pi pi-refresh" @click="getSwapPrice" />
-            <p>1 WTIST = {{ convertX96(poolData.sqrtPriceX96) }} USDC</p>
+            <p>1 WTIST = {{ convertX96ToPrice(poolData.sqrtPriceX96) }} USDC</p>
           </div>
         </div>
       </div>

@@ -13,6 +13,14 @@ import Button from 'primevue/button'
     <div class="flex mt-5 gap-4">
       <Button
         as="a"
+        label="Price on Chainlink"
+        href="https://data.chain.link/feeds/arbitrum/mainnet/wti-usd"
+        target="_blank"
+        rel="noopener"
+      />
+
+      <Button
+        as="a"
         label="WTI Information"
         href="https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html"
         target="_blank"

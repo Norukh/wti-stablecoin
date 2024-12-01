@@ -1,12 +1,15 @@
 from flask import Flask, jsonify, request
 import sqlite3
+
+from constants import OIL_DB_PATH
+from price import get_latest_price, get_historical_data
+
 app = Flask(__name__)
 
 
 def init_db():
     # Use an absolute path to ensure the database location is well-defined
-    db_path = '/backend/src/Oil.db'
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(OIL_DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS entries (
@@ -22,8 +25,7 @@ def init_db():
 
 @app.route('/oil', methods=['GET'])
 def get_entries():
-    db_path = '/backend/src/Oil.db'
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(OIL_DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM entries WHERE name = 'Oil'")
     entry = cursor.fetchone()
@@ -41,8 +43,7 @@ def adjust_entry():
     if adjustment_value is None or not isinstance(adjustment_value, int):
         return jsonify({"error": "Invalid adjustment value. Please provide an integer."}), 400
 
-    db_path = '/backend/src/Oil.db'
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(OIL_DB_PATH)
     cursor = conn.cursor()
 
     try:
@@ -70,6 +71,11 @@ def adjust_entry():
     finally:
         conn.close()
 
+
+@app.route('/price', methods=['GET'])
+def get_current_price():
+    latest_price = get_latest_price()
+    return jsonify(latest_price)
 
 if __name__ == '__main__':
     init_db()

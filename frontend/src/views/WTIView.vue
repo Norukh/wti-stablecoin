@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ethers, formatEther } from 'ethers'
+import { ethers, formatEther, formatUnits } from 'ethers'
 import { ref } from 'vue'
+import { USDC_CONTRACT_ADDRESSES, WTIST_CONTRACT_ADDRESSES } from '@/utils/constants'
+import Toast from 'primevue/toast'
 
 import SwapWidget from '@/components/SwapWidget.vue'
 import TransferWidget from '@/components/TransferWidget.vue'
@@ -24,7 +26,7 @@ declare global {
 let provider: any
 const account = ref(null)
 const balance = ref('')
-const totalSupply = ref(0)
+const gasPrice = ref('')
 
 const swapVisible = ref(false)
 
@@ -40,13 +42,10 @@ async function connectWallet() {
 
   provider = new ethers.BrowserProvider(window.ethereum)
 
-  await provider.send('eth_requestAccounts', [])
-
   const signer = await provider.getSigner()
   account.value = await signer.getAddress()
 
-  // initialize contract
-  const contractAddress = '0x58C653F1d11C3D334c3ee8fe813f4d0A5D5B4A9F'
+  const contractAddress = WTIST_CONTRACT_ADDRESSES['arbSepolia']
 
   const abi = [
     'function balanceOf(address owner) external view returns (uint256)',
@@ -55,9 +54,11 @@ async function connectWallet() {
 
   const contract = new ethers.Contract(contractAddress, abi, signer)
 
-  // TODO: call contract functions
   let bal = await contract.balanceOf(account.value)
   balance.value = formatEther(bal)
+
+  const unformattedGasPrice = (await provider.getFeeData()).gasPrice
+  gasPrice.value = formatUnits(unformattedGasPrice, 'gwei')
 }
 
 async function checkWalletConnected() {
@@ -69,23 +70,53 @@ async function checkWalletConnected() {
     await connectWallet()
   }
 }
+
+async function disconnectWallet() {
+  // Revoke permissions when disconnecting wallet
+  await window.ethereum.request({
+    method: 'wallet_revokePermissions',
+    params: [
+      {
+        eth_accounts: {}
+      }
+    ]
+  })
+
+  provider = null
+  account.value = null
+  balance.value = ''
+  store.setAccount('')
+  store.setBalance('')
+}
 </script>
 
 <template>
+  <Toast />
   <div class="m-auto">
     <!-- Connect Wallet Button -->
     <div v-if="!account" class="flex flex-col items-center align-middle gap-4 m-auto">
-      <Avatar icon="pi pi-ethereum" shape="circle" size="xlarge" />
+      <Avatar shape="circle" size="xlarge" icon="pi pi-ethereum" class="ether-logo" />
       <span class="text-lg">Connect your Wallet to get started</span>
       <Button v-if="!account" @click="connectWallet">Connect Wallet</Button>
     </div>
 
     <!-- Display WTI Token Information -->
     <div v-if="account" class="flex flex-col items-start gap-4">
-
       <div class="flex flex-row gap-1">
-        <Button label="Exit" variant="link" size="small" @click="account = null" icon="pi pi-arrow-left" />
-        <Button label="Refresh" variant="link" @click="checkWalletConnected" icon="pi pi-refresh" size="small" />
+        <Button
+          label="Exit"
+          variant="link"
+          size="small"
+          @click="disconnectWallet"
+          icon="pi pi-arrow-left"
+        />
+        <Button
+          label="Refresh"
+          variant="link"
+          @click="checkWalletConnected"
+          icon="pi pi-refresh"
+          size="small"
+        />
       </div>
 
       <Tabs value="0">
@@ -98,115 +129,155 @@ async function checkWalletConnected() {
         <TabPanels class="w-full m-auto">
           <TabPanel value="0">
             <Card>
-              <template #title>WTIST Stablecoin DApp</template>
+              <template #title>
+                <Avatar icon="pi pi-ethereum" shape="circle" size="small" class="mr-2" />
+                WTIST Stablecoin DApp
+              </template>
               <template #content>
-                <p class="m-0">
-                  <div v-if="account">Connected as: {{ account }}</div>
-                </p>
+                <div class="flex flex-col gap-3">
+                  <p>
+                    You're connected to the WTI Stablecoin DApp. Here you can swap your USDC for
+                    WTIST, transfer WTIST to other accounts, and view stats and charts.
+                  </p>
+
+                  <table class="table-auto">
+                    <tbody>
+                      <tr>
+                        <td class="font-bold" style="width: 20vh">Account:</td>
+                        <td>{{ account }}</td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold">Your Balance:</td>
+                        <td>{{ balance }} WTIST</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <p class="font-bold text-xl mt-4">Real-world asset equivalence</p>
+                  <table class="table-auto">
+                    <tbody>
+                      <tr>
+                        <td class="font-bold" style="width: 20vh">
+                          <span class="pi pi-receipt" />
+                          Barrels of WTI
+                        </td>
+                        <td>{{ 0 }}</td>
+                      </tr>
+                    </tbody>
+                    <caption class="caption-bottom">
+                      <p class="italic">
+                        1 WTIST = 1 barrel of Western Texas Intermediate Crude Oil
+                      </p>
+                    </caption>
+                  </table>
+                </div>
               </template>
             </Card>
           </TabPanel>
           <TabPanel value="1">
             <div class="flex flex-col gap-4">
               <Card>
-              <template #title>
-                <div class="flex items-center gap-2">
-                  <Avatar image="https://docs.uniswap.org/img/favicon.png" shape="circle" />
-                  <span class="font-bold">Swap your Coins with Uniswap V3 SwapRouter</span>
-                </div>
-              </template>
-              <template #content>
-                <div class="flex flex-col gap-3">
-                  <p>
-                    The Uniswap V3 SwapRouter allows you to swap your USDC with the Western Texas Intermediate Stablecoin (WTIST).
-                  </p>
+                <template #title>
+                  <div class="flex items-center gap-2">
+                    <Avatar image="https://docs.uniswap.org/img/favicon.png" shape="circle" />
+                    <span class="font-bold">Swap your Coins with Uniswap V3 SwapRouter</span>
+                  </div>
+                </template>
+                <template #content>
+                  <div class="flex flex-col gap-3">
+                    <p>
+                      The Uniswap V3 SwapRouter allows you to swap your USDC with the Western Texas
+                      Intermediate Stablecoin (WTIST).
+                    </p>
 
-                  <Button
-                    class="p-button-rounded p-button-outlined"
-                    icon="pi pi-arrow-right"
-                    label="Swap Now"
-                    @click="swapVisible = true"
-                    >
-                  </Button>
-                </div>
-              </template>
-            </Card>
+                    <Button
+                      class="p-button-rounded p-button-outlined"
+                      icon="pi pi-arrow-right"
+                      label="Swap Now"
+                      @click="swapVisible = true"
+                    />
+                  </div>
+                </template>
+              </Card>
 
-            <Card>
-              <template #title>
-                <div class="flex items-center gap-2">
-                  <Avatar image="https://pancakeswap.finance/favicon.ico" shape="circle" />
-                  <span class="font-bold">Swap your Coins with Pancakeswap</span>
-                </div>
-              </template>
-              <template #content>
-                <div class="flex flex-col gap-3">
-                  <p>
-                    Pancakeswap allows you to swap your USDC with the Western Texas Intermediate Stablecoin (WTIST).
-                  </p>
+              <Card>
+                <template #title>
+                  <div class="flex items-center gap-2">
+                    <Avatar image="https://pancakeswap.finance/favicon.ico" shape="circle" />
+                    <span class="font-bold">Swap your Coins with Pancakeswap</span>
+                  </div>
+                </template>
+                <template #content>
+                  <div class="flex flex-col gap-3">
+                    <p>
+                      Pancakeswap allows you to swap your USDC with the Western Texas Intermediate
+                      Stablecoin (WTIST).
+                    </p>
 
-                  <Button
-                    class="p-button-rounded p-button-outlined"
-                    icon="pi pi-arrow-right"
-                    label="Swap Now on Pancakeswap"
-                    >
-                  </Button>
-                </div>
-              </template>
-            </Card>
+                    <Button
+                      as="a"
+                      class="p-button-rounded p-button-outlined"
+                      icon="pi pi-arrow-right"
+                      label="Swap Now on Pancakeswap"
+                      target="_blank"
+                      rel="noopener"
+                      href="https://pancakeswap.finance/?chain=arbSepolia&outputCurrency=0x58C653F1d11C3D334c3ee8fe813f4d0A5D5B4A9F&inputCurrency=0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+                    />
+                  </div>
+                </template>
+              </Card>
             </div>
           </TabPanel>
           <TabPanel value="2">
             <Card>
-              <template #title>Transfer WTIST</template>
               <template #content>
                 <div class="flex flex-col gap-3">
-                  <TransferWidget />
+                  <TransferWidget
+                    :provider="provider"
+                    :balance="Number.parseFloat(balance)"
+                    :gasPrice="gasPrice"
+                  />
                 </div>
               </template>
             </Card>
           </TabPanel>
           <TabPanel value="3">
             <Card>
-              <template #title>WTIST Stablecoin DApp</template>
-              <template #content>
-                <p class="m-0">
-                  <div v-if="account">Connected as: {{ account }}</div>
-                </p>
-              </template>
+              <template #title>Stats and Charts</template>
+              <template #content> </template>
             </Card>
           </TabPanel>
         </TabPanels>
       </Tabs>
-
-      <!--
-      <h3>Your Balance: {{ balance }} WTI</h3>
-      <h3>Total Supply: {{ totalSupply }} WTI</h3>
-      <h3>WTI Price (USD): ${{ wtiPrice }}</h3>
-      <br />
-       
-      <h2>Mint WTI Tokens</h2>
-      <input v-model="collateralAmount" placeholder="Enter collateral (ETH)" />
-      <button @click="mintWTI">Mint</button>
-
-
-      <h2>Burn WTI Tokens</h2>
-      <input v-model="burnAmount" placeholder="Enter WTI amount to burn" />
-      <button @click="burnWTI">Burn</button>
-
-
-      <h2>Send Token</h2>
-      <input v-model="recipientAddress" placeholder="Enter recipient address" />
-      <input v-model="sendAmount" placeholder="Enter WTI amount to send" />
-      <button @click="sendWTI">Send</button>
-    </div>
-  -->
     </div>
   </div>
 
-  <Dialog v-model:visible="swapVisible" modal header="Swap with Uniswap" :style="{ width: '25rem' }">
-            <div class="flex items-center mt-4 mb-4">
-              <SwapWidget />
-            </div>
-        </Dialog>
+  <Dialog
+    v-model:visible="swapVisible"
+    modal
+    header="Swap with Uniswap"
+    :style="{ width: '25rem' }"
+  >
+    <div class="flex items-center mt-4 mb-4">
+      <SwapWidget :provider="provider" :balance="Number.parseFloat(balance)" />
+    </div>
+  </Dialog>
 </template>
+
+<style>
+.ether-logo {
+  animation: spin-ether 5s ease-in-out infinite;
+}
+
+@keyframes spin-ether {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>

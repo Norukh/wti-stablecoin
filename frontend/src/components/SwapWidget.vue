@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ethers, parseUnits, AbiCoder } from 'ethers'
+import { ethers, parseUnits, formatUnits } from 'ethers'
 import QuoterV2 from '@uniswap/v3-periphery/artifacts/contracts/lens/QuoterV2.sol/QuoterV2.json'
+import SwapRouter02 from '@uniswap/swap-router-contracts/artifacts/contracts/SwapRouter02.sol/SwapRouter02.json'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputGroup from 'primevue/inputgroup'
@@ -23,8 +24,8 @@ const props = defineProps({
   balance: Number
 })
 
-const abiCoder = AbiCoder.defaultAbiCoder()
 const chain = 'arbSepolia'
+const poolFee = 500
 
 const isInvalidAmountPay = ref<boolean>(false)
 const isInvalidAmountReceive = ref<boolean>(false)
@@ -35,7 +36,7 @@ const loadingSwap = ref<boolean>(false)
 type Token = {
   symbol: string
   address: string
-  value: number | undefined
+  value: string | undefined
 }
 
 type PoolData = {
@@ -75,12 +76,12 @@ const priceQuote = ref<PriceQuote>({
 const payToken = ref<Token>({
   symbol: 'USDC',
   address: '',
-  value: undefined
+  value: ''
 })
 const receiveToken = ref<Token>({
   symbol: 'WTIST',
   address: '',
-  value: undefined
+  value: ''
 })
 
 const switchTokens = () => {
@@ -90,7 +91,7 @@ const switchTokens = () => {
   receiveToken.value = temp
 }
 
-async function calculateBuyPrice() {
+async function calculateBuyPrice(isPay = true) {
   const signer = await props.provider?.getSigner()
 
   const quoterContractAddress = UNISWAP_QUOTER_ADDRESSES[chain]
@@ -101,36 +102,47 @@ async function calculateBuyPrice() {
 
   const quoterContract = new ethers.Contract(quoterContractAddress, quoterAbi, signer)
 
-  const usdcAmount = parseUnits(payToken.value.value!.toString(), 6)
-  const wtistAmount = parseUnits(receiveToken.value.value!.toString(), 18)
+  const decPay = payToken.value.symbol === 'USDC' ? 6 : 18
+  const amountIn = isPay ? payToken.value.value : receiveToken.value.value
 
-  const amountOutData = await quoterContract.quoteExactInputSingle.staticCall({
-    tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
-    tokenOut: receiveToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
-    amountIn: payToken.value.symbol === 'USDC' ? usdcAmount : wtistAmount,
-    fee: 500,
-    sqrtPriceLimitX96: 0
-  }).then((data: Array<number>) => {
-    return {
-      amountOut: data[0],
-      sqrtPriceX96After: data[1],
-      initializedTicksCrossed: data[2],
-      gasEstimate: data[3]
-    }
-  }) as PriceQuote;
+  if (amountIn === undefined || amountIn === '') {
+    receiveToken.value.value = ''
+    return
+  }
 
-  priceQuote.value = amountOutData
-  console.log('Amount out:', amountOutData)
+  const parsedAmountIn = parseUnits(amountIn!.toString(), decPay)
+
+  if (parsedAmountIn.valueOf() <= 0) {
+    receiveToken.value.value = ''
+    return
+  }
+
+  const amountOutData = await quoterContract.quoteExactInputSingle
+    .staticCall({
+      tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+      tokenOut: receiveToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+      amountIn: parsedAmountIn,
+      fee: poolFee,
+      sqrtPriceLimitX96: 0
+    })
+    .then((data: Array<number>) => {
+      return {
+        amountOut: data[0],
+        sqrtPriceX96After: data[1],
+        initializedTicksCrossed: data[2],
+        gasEstimate: data[3]
+      }
+    })
+
+  console.log('Amount out data:', amountOutData)
+  receiveToken.value.value = formatUnits(amountOutData.amountOut, decPay).slice(0, 10)
 }
 
 async function swapTokens() {
   const signer = await props.provider?.getSigner()
 
   const swapContractAddress = UNISWAP_SWAP_ROUTER_ADDRESSES[chain]
-  const swapAbi = [
-    'function exactInputSingle(tuple address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) external returns (uint256 amountOut)',
-    'function exactOutputSingle(tuple address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountOut, uint256 amountInMaximum, uint160 sqrtPriceLimitX96) external returns (uint256 amountIn)'
-  ]
+  const swapAbi = SwapRouter02.abi
 
   const erc20abi = [
     'function approve(address spender, uint256 amount) external returns (bool)',
@@ -152,6 +164,36 @@ async function swapTokens() {
 
   console.log('USDC amount:', usdcAmount.toString())
   console.log('WTIST amount:', wtistAmount.toString())
+
+  if (payToken.value.symbol === 'USDC') {
+    const usdcApprove = await usdcContract.approve(swapContractAddress, usdcAmount)
+    console.log('USDC approve:', usdcApprove)
+  } else {
+    const wtistApprove = await wtistContract.approve(swapContractAddress, wtistAmount)
+    console.log('WTIST approve:', wtistApprove)
+  }
+
+  console.log({
+    tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+    tokenOut: receiveToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+    fee: poolFee,
+    recipient: await signer.getAddress(),
+    amountIn: payToken.value.symbol === 'USDC' ? usdcAmount : wtistAmount,
+    amountOutMinimum: 0,
+    sqrtPriceLimitX96: 0
+  })
+
+  const swap = await swapContract.exactInputSingle({
+    tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+    tokenOut: receiveToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+    fee: poolFee,
+    recipient: await signer.getAddress(),
+    amountIn: payToken.value.symbol === 'USDC' ? usdcAmount : wtistAmount,
+    amountOutMinimum: 0,
+    sqrtPriceLimitX96: 0
+  })
+
+  console.log('Swap:', swap)
 }
 
 async function evaluateSwap() {
@@ -181,7 +223,7 @@ async function evaluateSwap() {
   swapStatus.value = ''
   loadingSwap.value = true
 
-  await calculateBuyPrice()
+  await swapTokens()
 
   loadingSwap.value = false
 }
@@ -217,7 +259,7 @@ getSwapPrice()
 <template>
   <Card style="height: auto; max-width: 50vh" class="m-auto">
     <template #header>
-      <img alt="user header" src="https://picsum.photos/400/100" />
+      <img alt="user header" src="https://picsum.photos/600/150" />
     </template>
     <template #title>Swap WTIST with USDC</template>
     <template #subtitle>
@@ -238,7 +280,7 @@ getSwapPrice()
                 id="in_label"
                 v-model="payToken.value"
                 :invalid="isInvalidAmountPay"
-                @keydown="isInvalidAmountPay = false"
+                @keydown="calculateBuyPrice(), (isInvalidAmountPay = false)"
               />
               <label for="in_label">Sell</label>
             </FloatLabel>

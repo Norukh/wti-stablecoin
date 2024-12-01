@@ -8,7 +8,7 @@ The WTI - Stablecoin represents the oil price of "West Texas Intermediate", whic
 How do we ensure stability?
 
 - Liquidity Pool
-- Users can buy / sell coins directly with better fees
+Idea : - Users can buy / sell coins directly with better fees
 - Over collateralization 10%
 
 Liquidity Mining

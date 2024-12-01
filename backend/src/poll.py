@@ -6,7 +6,7 @@ import datetime
 from constants import WTIST_CONTRACT_ADDRESS
 
 infura_url = "https://arbitrum-sepolia.infura.io/v3/617c65d94c2b42d6a5845e2ebc63928a"
-contract_address = WTIST_CONTRACT_ADDRESS
+contract_address = WTIST_CONTRACT_ADDRESS.lower()
 WTI_rest = 0
 #contract_address = "0x48d848f8a1d1541e82f7ed1348cf58c5d63d9fab".lower()  #Contract for testing backend
 #contract_address = "0xfF09968a22768Ae9699f89b8B051Ec78dB81aDDB".lower()

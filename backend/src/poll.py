@@ -101,7 +101,7 @@ def poll_blockchain():
                                         #print(f"From: {tx['from']}")
                                         #print(f"To: {tx['to']}")
                                         #print(f"Value: {int(tx['value'], 16) / (10 ** 18)} ETH")
-                                        amount_purchased += 0.5 * current_eth_price
+                                        amount_purchased += int(tx['value'], 16) / (10 ** 18) * current_eth_price
                 last_block = latest_block
                 one_minute_ago = int(time.time()) - 60
             current_wti_price = read_wti_price()

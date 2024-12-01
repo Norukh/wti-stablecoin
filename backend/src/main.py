@@ -35,19 +35,40 @@ def get_entries():
 
 
 @app.route('/oil', methods=['POST'])
-def update_entry():
+def adjust_entry():
     update_data = request.get_json()
-    new_value = update_data.get('value')
-    if new_value is None or not isinstance(new_value, int):
-        return jsonify({"error": "Invalid value. Please provide an integer."}), 400
+    adjustment_value = update_data.get('adjustment')
+    if adjustment_value is None or not isinstance(adjustment_value, int):
+        return jsonify({"error": "Invalid adjustment value. Please provide an integer."}), 400
 
     db_path = '/backend/src/Oil.db'
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("UPDATE entries SET value = ? WHERE name = 'Oil'", (new_value,))
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Oil value updated successfully", "new_value": new_value}), 200
+
+    try:
+        # Fetch the current value
+        cursor.execute("SELECT value FROM entries WHERE name = 'Oil'")
+        entry = cursor.fetchone()
+
+        if not entry:
+            return jsonify({"error": "Oil entry not found"}), 404
+
+        current_value = entry[0]
+        # Adjust the value
+        new_value = current_value + adjustment_value
+
+        # Update the database with the new value
+        cursor.execute("UPDATE entries SET value = ? WHERE name = 'Oil'", (new_value,))
+        conn.commit()
+        return jsonify({
+            "message": "Oil value adjusted successfully",
+            "adjustment": adjustment_value,
+            "new_value": new_value
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 
 if __name__ == '__main__':

@@ -256,7 +256,7 @@ async function disconnectWallet() {
     v-model:visible="swapVisible"
     modal
     header="Swap with Uniswap"
-    :style="{ width: '25rem' }"
+    :style="{ width: '35rem' }"
   >
     <div class="flex items-center mt-4 mb-4">
       <SwapWidget :provider="provider" :balance="Number.parseFloat(balance)" />

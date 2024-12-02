@@ -59,7 +59,7 @@ This ensures that the users are getting an opportunity to get the stablecoin at 
 The diagram below explains the infrastructure overview of the dockerized application. 
 Details can be found in the sections below and in the respective folders of the repository for each component.
 
-TODO: add diagram for infrastructure
+![WTIST Infrastructure and Deployment](assets/wtist.infra.png)
 
 ### Contracts
 The contracts are deployed on the Arbitrum Sepolia chain. 
@@ -100,7 +100,7 @@ https://docs.uniswap.org/concepts/protocol/concentrated-liquidity
 => Lower ticks better for stablecoin
 
 ### Backend
-**Technologies used:** Solidity, Hardhat, multisol
+**Technologies used:** Solidity, Hardhat, [multisol](https://github.com/PaulRBerg/multisol) (for contract verification on Arbiscan).
 
 #### REST API
 

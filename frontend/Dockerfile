@@ -1,5 +1,5 @@
 # build stage
-FROM node:latest as build
+FROM node:lts-alpine as build-stage
 WORKDIR /app
 COPY package*.json ./
 RUN yarn install
@@ -7,8 +7,12 @@ COPY . .
 RUN yarn build
 
 # production stage
-FROM node:latest as production
-COPY --from=build /app/dist /app
-WORKDIR /app
-EXPOSE 3500
-CMD npx http-server . -p 3500
+FROM nginx:stable-alpine as production-stage
+COPY --from=build-stage /app/dist /usr/share/nginx/html
+
+# setting timezone
+RUN apk add --no-cache tzdata
+ENV TZ=Europe/Zurich
+
+EXPOSE 80
+CMD [ "nginx", "-g", "daemon off;" ]

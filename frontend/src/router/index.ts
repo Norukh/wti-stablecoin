@@ -15,17 +15,17 @@ const router = createRouter({
     {
       path: '/transparency',
       name: 'transparency',
-      component: () => TransparencyView
+      component: TransparencyView
     },
     {
       path: '/about',
       name: 'about',
-      component: () => AboutView
+      component: AboutView
     },
     {
       path: '/WTI',
       name: 'WTI',
-      component: () => WTIView
+      component: WTIView
     }
   ]
 })

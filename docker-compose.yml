@@ -35,7 +35,7 @@ services:
     networks:
       - wtist
     ports:
-      - "3500:3500"
+      - "3500:80"
 
 networks:
   wtist:

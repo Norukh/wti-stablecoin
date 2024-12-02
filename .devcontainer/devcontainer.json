@@ -1,19 +1,33 @@
 {
-    "name": "TypeScript Solidity Dev Container",
-    "dockerComposeFile": "docker.compose.yml",
-    "service": "vscode-container",
+    "name": "Dev Container for the WTIST Stablecoin project",
+    "dockerComposeFile": "./docker.compose.yml",
+    "service": "wtist_devcontainer",
     "workspaceFolder": "/workspace",
     "shutdownAction": "stopCompose",
     "customizations": {
       "vscode": {
+        "settings": {
+          "terminal.integrated.shell.linux": "/bin/bash",
+          "terminal.integrated.shellIntegration.enabled": true,
+        },
         "extensions": [
+          "ms-python.python",
+          "ms-python.vscode-pylance",
           "dbaeumer.vscode-eslint",
           "esbenp.prettier-vscode",
           "ms-vscode.vscode-typescript-next",
+          "Vue.volar",
+          "GitHub.copilot",
+          "GitHub.copilot-chat",
+          "ms-azuretools.vscode-docker",
+          "ms-python.mypy-type-checker",
+          "ms-python.flake8",
+          "ms-python.pylint",
+          "njqdev.vscode-python-typehint",
           "NomicFoundation.hardhat-solidity",
-          "Vue.volar"
         ]
       }
     },
-    "postCreateCommand": "npm install -g yarn && yarn global add @vue/cli typescript && yarn install"
+    "remoteUser": "root",
+    "postCreateCommand": "git config --global --add safe.directory /workspace"
   }

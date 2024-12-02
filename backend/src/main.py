@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 import sqlite3
 
 from constants import OIL_DB_PATH
-from price import get_latest_price, get_historical_data
+from price import get_latest_price
 
 app = Flask(__name__)
 

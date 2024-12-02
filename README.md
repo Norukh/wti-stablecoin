@@ -27,25 +27,28 @@ TODO:
 - Liquidity Pool
 - Over collateralization 10%
 
-### Two scenarios
+### Scenarios
 We make sure to cover two different scenarios with our stablecoin, where we must counteract automatically with a rebalancing method to keep the price of the targeted asset stable.
 
 #### Price of the WTI asset goes up in the real world
-
-TODO:
-- Mint and put in pool
-- USDC receive
-- price goes up for WTIST
-- with usdc buy real life assets
-
-- sell real life assets
-- receive 
+1. The balance of WTIST of the pool contract gets checked
+2. If the balance is below 10 WTIST, we add liquidity for another 100 WTIST.
+3. Rebalancing: We swap the USDC for WTIST until the price target is met.
+4. We get WTIST
+5. Price for WTIST goes up as we remove WTIST and add USDC by swapping.
 
 #### Price of the WTI asset goes down in the real world
-TODO:
-- We will add liquidity for USDC - WTIST pair
-- Price goes down for WTIST
-- We will sell real-life assets
+1. The balance of USDC of the pool contract gets checked
+2. If the balance is below 100 USDC, we add liquidity for another 1000 USDC.
+3. Rebalancing: We swap the WTIST for USDC until the price target is met.
+4. We get USDC
+5. Price for WTIST goes down as we remove USDC and add WTIST by swapping.
+
+We also need to make sure to maintain the amount of WTIST that we can provide.
+To do so we do the following checks regularly with our backend application:
+
+1. The balance of WTIST of the backend address gets checked
+2. If the balance of WTIST is below 1'000 WTIST, we mint another 500'000 WTIST.
 
 ### Future Opportunities
 In the future the stablecoin tokenomics can be enhanced by incentivising users to stake their tokens in a liquidity pool with a Uniswap staker.
@@ -92,6 +95,9 @@ Below are the technical details of our pool to swap between WTIST ↔️ USDC on
 | Initial tick                   | `-233981`                                                               |
 | Tick spacing                   | `200`                                                                   |
 
+Tick spacing:
+https://docs.uniswap.org/concepts/protocol/concentrated-liquidity
+=> Lower ticks better for stablecoin
 
 ### Backend
 **Technologies used:** Solidity, Hardhat, multisol

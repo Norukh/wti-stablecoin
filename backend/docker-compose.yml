@@ -15,8 +15,8 @@ services:
   #   volumes:
   #     - ./src/Oil.db:/backend/src/Oil.db
 
-  historical:
+  calc:
     build: .
-    command: [ "sh", "-c", "PYTHONUNBUFFERED=1 python price.py && tail -f /dev/null" ]
-    volumes:
-      - ./data/prices.db:/backend/data/prices.db
+    command: [ "sh", "-c", "PYTHONUNBUFFERED=1 python calc.py && tail -f /dev/null" ]
+    # volumes:
+    #   - ./data/prices.db:/backend/data/prices.db

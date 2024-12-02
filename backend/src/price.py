@@ -1,8 +1,6 @@
-import sqlite3
-import requests
-import json
-from constants import PRICE_FEED_CONTRACT_ADDRESS, AGGREGATOR_INTERFACE_ABI, MAX_INT_64, PRICES_DB_PATH
 from web3 import Web3
+import sqlite3
+from constants import PRICE_FEED_CONTRACT_ADDRESS, AGGREGATOR_INTERFACE_ABI, MAX_INT_64, PRICES_DB_PATH
 
 rpc_url = "https://arb1.arbitrum.io/rpc"
 contract_address = PRICE_FEED_CONTRACT_ADDRESS
@@ -11,6 +9,7 @@ web3 = Web3(Web3.HTTPProvider(rpc_url))
 abi = AGGREGATOR_INTERFACE_ABI
 
 contract = web3.eth.contract(address=contract_address, abi=abi)
+
 
 def init_db():
     conn = sqlite3.connect(PRICES_DB_PATH)
@@ -26,10 +25,13 @@ def init_db():
     ''')
     conn.close()
 
+
 def get_decimals() -> int:
+    decimals = 0
     if decimals <= 0:
         decimals = contract.functions.decimals().call()
     return decimals
+
 
 def get_latest_price():
     latest_round_data = contract.functions.latestRoundData().call()
@@ -37,6 +39,7 @@ def get_latest_price():
         "decimals": get_decimals(),
         "price": latest_round_data[1],
     }
+
 
 def get_historical_price(round_id):
     historical_data = contract.functions.getRoundData(round_id).call()
@@ -47,6 +50,7 @@ def get_historical_price(round_id):
         "updated_at": historical_data[3],
         "answered_in_round": historical_data[4]
     }
+
 
 def load_historical_data():
     conn = sqlite3.connect(PRICES_DB_PATH)
@@ -67,20 +71,19 @@ def load_historical_data():
     for round_id in range(first_round_id, latest_round_id):
         historical_pr = get_historical_price(round_id)
 
-        print(str(historical_pr["round_id"]), 
-            historical_pr["price"], 
-            historical_pr["started_at"], 
-            historical_pr["updated_at"], 
-            str(historical_pr["answered_in_round"]))
+        print(str(historical_pr["round_id"]),
+              historical_pr["price"],
+              historical_pr["started_at"],
+              historical_pr["updated_at"],
+              str(historical_pr["answered_in_round"]))
 
         cursor.execute("INSERT OR IGNORE INTO entries (roundId, price, startedAt, updatedAt, answeredInRound) VALUES (?, ?, ?, ?, ?)",
-                          (str(historical_pr["round_id"]), 
-            historical_pr["price"], 
-            historical_pr["started_at"], 
-            historical_pr["updated_at"], 
-            str(historical_pr["answered_in_round"])))
+                       (str(historical_pr["round_id"]),
+                           historical_pr["price"],
+                        historical_pr["started_at"],
+                        historical_pr["updated_at"],
+                        str(historical_pr["answered_in_round"])))
         conn.commit()
-
 
         historical_data.append(historical_pr)
 
@@ -90,4 +93,3 @@ def load_historical_data():
 if __name__ == "__main__":
     init_db()
     load_historical_data()
-

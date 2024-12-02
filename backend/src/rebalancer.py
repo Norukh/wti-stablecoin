@@ -1,80 +1,68 @@
 import os
 import time
+import logging
+from typing import Tuple
+
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
 from eth_account import Account
 from dotenv import load_dotenv
-from constants import LIQUIDITY_POOL_ABI, SWAP_ROUTER_ABI
-import json
 
-# Load environment variables
+from constants import SWAP_ROUTER_02_ADDRESS, SWAP_ROUTER_ABI, LIQUIDITY_POOL_CONTRACT_ADDRESS, LIQUIDITY_POOL_ABI, WTIST_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS, QUOTER_ADDRESS, QUOTER_ABI
+from util import format_units, parse_units, sqrt_price_X96_to_price
+from price import get_latest_price
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 # Arbitrum Sepolia network configuration
 PROVIDER_URL = os.getenv("PROVIDER_URL")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 
-# Contract addresses
-SWAP_ROUTER_02_ADDRESS = os.getenv("SWAP_ROUTER_02_ADDRESS")  # Address of your SwapRouter02
-WTIST_TOKEN_ADDRESS = os.getenv("WTIST_TOKEN_ADDRESS")
-USDC_ADDRESS = os.getenv("USDC_ADDRESS")
-POOL_ADDRESS = os.getenv("POOL_ADDRESS")  # Address of your liquidity pool
-
-
-# Initialize Web3
-w3 = Web3(Web3.HTTPProvider(PROVIDER_URL))
-w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-
-# Account
+web3 = Web3(Web3.HTTPProvider(PROVIDER_URL))
 account = Account.from_key(PRIVATE_KEY)
 
-# SwapRouter ABI
-swaprouter_contract = w3.eth.contract(address=SWAP_ROUTER_02_ADDRESS, abi=SWAP_ROUTER_ABI)
+# SwapRouter
+swap_contract = web3.eth.contract(
+    address=SWAP_ROUTER_02_ADDRESS, abi=SWAP_ROUTER_ABI)
 
-# Liquidity Pool ABI
-pool_contract = w3.eth.contract(address=POOL_ADDRESS, abi=LIQUIDITY_POOL_ABI)
+# Liquidity Pool
+pool_contract = web3.eth.contract(
+    address=LIQUIDITY_POOL_CONTRACT_ADDRESS, abi=LIQUIDITY_POOL_ABI)
 
-# Function to get the price ratio from pool reserves
-def get_price_ratio():
+# Quoter
+quoter_contract = web3.eth.contract(
+    address=QUOTER_ADDRESS, abi=QUOTER_ABI)
+
+
+def swap_tokens(tokenIn, tokenOut, amountIn, poolFee, amountOutMinimum=0, sqrtPriceLimitX96=0):
     try:
-        reserve_wtist = #Replace with the correct index from your pool's ABI
-        reserve_usdc = #Replace with the correct index from your pool's ABI
-        if reserve_usdc == 0:
-            return float('inf')
-        ratio = reserve_wtist / reserve_usdc
-        return ratio
-    except Exception as e:
-        print(f"Error getting price ratio: {e}")
-        return None
+        nonce = web3.eth.getTransactionCount(account.address)
 
-
-# Function to swap tokens using SwapRouter02
-def swap_tokens(amountIn, tokenIn, tokenOut, poolFee, amountOutMinimum=0, sqrtPriceLimitX96=0):
-    try:
-        nonce = w3.eth.getTransactionCount(account.address)
-
-        #Encode the path correctly for ExactInputSingle
+        # Encode the path correctly for ExactInputSingle
         transaction = swaprouter_contract.functions.ExactInputSingle(
             {
                 'tokenIn': tokenIn,
                 'tokenOut': tokenOut,
-                'fee': poolFee, #Remember that this is a uint24
+                'fee': poolFee,  # Remember that this is a uint24
                 'recipient': account.address,
                 'deadline': w3.eth.getBlock('latest')['timestamp'] + 60,
                 'amountIn': amountIn,
-                'amountOutMinimum': amountOutMinimum, # Usually should be set to a non-zero value to prevent slippage
-                'sqrtPriceLimitX96': sqrtPriceLimitX96 # Usually set to 0 for no limit
+                # Usually should be set to a non-zero value to prevent slippage
+                'amountOutMinimum': amountOutMinimum,
+                'sqrtPriceLimitX96': sqrtPriceLimitX96  # Usually set to 0 for no limit
             }
         ).buildTransaction({
             'chainId': 421614,
             'from': account.address,
             'nonce': nonce,
             'gasPrice': w3.eth.gas_price,
-            'gas': 3000000,  #Increased gas limit, might need to increase it even further
+            'gas': 3000000,  # Increased gas limit, might need to increase it even further
         })
 
-
-        signed_txn = w3.eth.account.signTransaction(transaction, private_key=PRIVATE_KEY)
+        signed_txn = w3.eth.account.signTransaction(
+            transaction, private_key=PRIVATE_KEY)
         tx_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
         print(f"Swap transaction hash: {w3.toHex(tx_hash)}")
         w3.eth.waitForTransactionReceipt(tx_hash)
@@ -83,28 +71,142 @@ def swap_tokens(amountIn, tokenIn, tokenOut, poolFee, amountOutMinimum=0, sqrtPr
         print(f"Error swapping tokens: {e}")
 
 
-# Rebalance function (simplified)
+def get_quote_price(token_in, token_out, amount_in, pool_fee=10000, sqrt_price_limit_x96=0):
+    amount_out_data = quoter_contract.functions.quoteExactInputSingle({
+        "tokenIn": token_in,
+        "tokenOut": token_out,
+        "amountIn": amount_in,
+        "fee": pool_fee,
+        "sqrtPriceLimitX96": sqrt_price_limit_x96
+    }).call()
+
+    amount_out = {
+        "amountOut": amount_out_data[0],
+        "sqrtPriceX96": amount_out_data[1],
+        "initializedTicksCrossed": amount_out_data[2],
+        "gasEstimate": amount_out_data[3]
+    }
+
+    return sqrt_price_X96_to_price(amount_out["sqrtPriceX96"]), amount_out["amountOut"]
+
+
+def get_current_pool_ratio():
+    slot0 = pool_contract.functions.slot0().call()
+    slot0 = {
+        "sqrtPriceX96": slot0[0],
+        "tick": slot0[1],
+        "observationCardinality": slot0[2],
+        "observationCardinalityNext": slot0[3],
+        "feeProtocol": slot0[4],
+        "unlocked": slot0[5]
+    }
+
+    logger.info(f"Current slot0: {slot0}")
+    return sqrt_price_X96_to_price(slot0["sqrtPriceX96"])
+
+
+def rebalancing(
+        target_ratio,
+        token_in,
+        token_out,
+        token_in_decimals
+) -> Tuple[float, float]:
+    logger.info(f"Target ratio: {target_ratio}")
+
+    step = 10
+    amount_in = step
+    (quote_price, _) = get_quote_price(token_in,
+                                       token_out, parse_units(amount_in, token_in_decimals))
+    logger.info(f"Initial quote price: {quote_price}")
+
+    below = False
+    above = False
+
+    def plus(x): return x + step
+    def minus(x): return x - step
+    change = plus
+
+    for i in range(1, 50):
+        amount_in = change(amount_in)
+
+        if quote_price < target_ratio:
+            below = True
+            logger.info(f"Quote price below target ratio: {quote_price}")
+        else:
+            above = True
+            logger.info(f"Quote price above target ratio: {quote_price}")
+
+        (quote_price, _) = get_quote_price(token_in,
+                                           token_out, parse_units(amount_in, token_in_decimals))
+        if below and above:
+            if change == plus:
+                change = minus
+            else:
+                change = plus
+            step = step // 2
+            below = False
+            above = False
+
+        logger.info(f"Quote price: {quote_price}")
+
+    return quote_price, amount_in
+
+
 def rebalance_pool():
-    ratio = get_price_ratio()
-    if ratio is not None:
-        target_ratio = 1 / 69
-        tolerance = 0.1
-        deviation = abs(ratio - target_ratio) / target_ratio
+    latest_price = get_latest_price()
+    target_ratio = format_units(
+        latest_price["price"], latest_price["decimals"])
+
+    target_ratio = 71
+
+    logger.info(f"Current WTIST target price ratio: {target_ratio}")
+
+    if target_ratio is not None and target_ratio > 0:
+        tolerance = 0.01
+        current_ratio = get_current_pool_ratio()
+
+        logger.info(f"Current price ratio: {current_ratio}")
+
+        deviation = abs(current_ratio - target_ratio) / target_ratio
+        logger.info(f"Deviation: {deviation:.2%}")
 
         if deviation > tolerance:
-            print(f"Price ratio deviated by {deviation:.2f}. Rebalancing...")
-            if ratio > target_ratio * (1 + tolerance):  # Sell WTIST, buy USDC
-                amountIn = 10**18  # Placeholder – needs improvement (see explanation below)
-                amountOutMinimum = int(0.95 * amountIn * ratio)  # 5% slippage buffer
-                swap_tokens(amountIn, WTIST_TOKEN_ADDRESS, USDC_ADDRESS, 3000, amountOutMinimum) #Remember to set poolFee
-            else:  # Sell USDC, buy WTIST
-                amountIn = 10**6   # Placeholder – needs improvement
-                amountOutMinimum = int(0.95 * amountIn / ratio)  # 5% slippage buffer
-                swap_tokens(amountIn, USDC_ADDRESS, WTIST_TOKEN_ADDRESS, 3000, amountOutMinimum) #Remember to set poolFee
+            logger.info(f"*** Deviation above tolerance {tolerance:.2%} ***")
+            logger.info(f"Current price ratio: {current_ratio}")
+            logger.info(f"Target price ratio: {target_ratio}")
+            logger.info(f"Price ratio deviated by {
+                        deviation:.2f}. Rebalancing...")
+
+            try:
+                # Sell WTIST, buy USDC
+                if current_ratio > target_ratio * (1 + tolerance):
+                    logger.info("Sell WTIST, buy USDC")
+
+                    (quote_price, amount_in) = rebalancing(target_ratio,
+                                                        WTIST_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS, 18)
+
+                    logger.info(f"Final Quote price: {quote_price}")
+                    logger.info(f"Final amount in: {amount_in} WTIST")
+
+                # Sell USDC, buy WTIST
+                else:
+                    logger.info("Sell USDC, buy WTIST")
+
+                    (quote_price, amount_in) = rebalancing(
+                        target_ratio, USDC_CONTRACT_ADDRESS, WTIST_CONTRACT_ADDRESS, 6)
+
+                    logger.info(f"Final Quote price: {quote_price}")
+                    logger.info(f"Final amount in: {amount_in} USDC")
+            except Exception as e:
+                logger.error(f"Error rebalancing pool: {e}")
+                logger.info("Trying again in 2 minutes...")
 
 
 # Main loop
 if __name__ == "__main__":
+    logger.info("Starting rebalancer...")
     while True:
         rebalance_pool()
-        time.sleep(60)
+
+        # Sleep for 2 minutes
+        time.sleep(120)

@@ -19,6 +19,10 @@ ignition/deployments/chain-31337
 # Hardhat Ignition default folder for deployments against a local node
 /.idea
 
-
-
 *~
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__

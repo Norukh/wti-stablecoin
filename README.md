@@ -8,24 +8,55 @@ Read the topics below, to learn more about this project.
 This project is a part of the challenge task for the Blockchain module ([BlCh HS-2024](https://dsl.i.ost.ch/lect/hs24/)) at the Eastern Switzerland University of Applied Sciences.
 The challenge tasks was to create a stablecoin that can be traded on a DEX (Decentralized Exchange) and has a rebalancing mechanism.
 
-As required by the task this project contains:
-- A simple frontend (with Vue)
-    - It is able to swap stablecoin
-    - Status and process are shown in the frontend
-- A public blockchain is included (Testnet of L2: Arbitrum Sepolia)
-    - Trading/swapping is possible with Uniswap and Pancakeswap
-- The app does an automatic rebalancing of the stablecoin (described below)
+## Project Requirements Compliance
+
+_As required by the task this project contains:_
+
+✅ Working Prototype
+- A simple frontend (with Vue.js and Primevue)
+  - It is able to swap stablecoin
+  - Status and process are shown in the frontend
+- Stablecoin representing WTI crude oil price
+- Deployed on Arbitrum Sepolia
+
+✅ Latest Library Versions
+- Vue.js
+- Primevue
+- ethers.js (v6)
+- Hardhat
+- Web3.py
+
+✅ Public Blockchain Interaction
+- Deployed on Arbitrum Sepolia (L2 Ethereum)
+  - Trading/Swapping with Uniswap (and Pancakeswap)
+
+✅ DEX Tradability
+- Uniswap pool created with WTIST/USDC pair
+- Swap functionality implemented
+
+✅ Automatic Rebalancing of the Stablecoin (described below)
+- Backend mechanism to maintain price stability
+- Scenarios for price fluctuations defined
+
+✅ Frontend Status Tracking
+- Vue.js frontend with process and status display
+
 
 ## Concept
 This project is a concept for a stablecoin representing the price of Western Texas Intermediate (WTI) crude oil.
 Western Texas Intermediate is a grade crude oil from the United States.
 
-### Stability
-How do we ensure stability?
+### Stability Mechanism
 
-TODO:
-- Liquidity Pool
-- Over collateralization 10%
+Our stablecoin maintains its value through a sophisticated rebalancing algorithm that:
+- Monitors the WTI crude oil price using Chainlink's price feed
+- Checks the liquidity pool ratio every 5 minutes
+- Automatically adjusts token quantities to maintain a +/- 1% price stability
+
+Key Rebalancing Components:
+- Real-time WTI price tracking
+- Liquidity pool ratio analysis
+- Automated swap mechanisms to stabilize pricing
 
 ### Scenarios
 We make sure to cover two different scenarios with our stablecoin, where we must counteract automatically with a rebalancing method to keep the price of the targeted asset stable.
@@ -54,6 +85,9 @@ To do so we do the following checks regularly with our backend application:
 In the future the stablecoin tokenomics can be enhanced by incentivising users to stake their tokens in a liquidity pool with a Uniswap staker.
 Another idea is to offer users of our App the possibility to buy and sell stablecoins directly on the App. 
 This ensures that the users are getting an opportunity to get the stablecoin at the best price possible, even when there are fluctuations on the DEX.
+
+#### Risk Management
+- Over collateralization 10%
 
 ## Infrastructure
 The diagram below explains the infrastructure overview of the dockerized application. 
@@ -110,7 +144,31 @@ https://docs.uniswap.org/concepts/protocol/concentrated-liquidity
 To test the ethers.js package open the following website:
 [Ethers Playground](https://playground.ethers.org/)
 
-## Usage 
+
+## Getting Started
+
+### Prerequisites
+- Docker
+- Node.js (v18+ recommended)
+- Metamask or equivalent Web3 wallet
+
+### Installation Steps
+1. Clone the repository
+   ```shell
+   git clone https://github.com/Norukh/wti-stablecoin.git
+   cd wtist-stablecoin
+      ```
+   
+2. Set up environment variables - Create a .env file with:
+   ```shell
+   PROVIDER_URL="provider_url" # Replace with your Arbitrum Sepolia RPC provider URL
+   PRIVATE_KEY="your_private_key" # Address of the wallet that will deploy the smart contracts
+   ```
+    > **Make sure that your wallet has enough WTIST and USDCs to perform the Swaps**
+
+3. DOCKER COMPOSE #TODO NICO
+
+## Usage for development
 
 ```shell
 # compile the solidity code

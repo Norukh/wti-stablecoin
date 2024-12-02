@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 from typing import Tuple
 
@@ -7,7 +6,7 @@ from web3 import Web3
 from eth_account import Account
 from dotenv import load_dotenv
 
-from constants import SWAP_ROUTER_02_ADDRESS, SWAP_ROUTER_ABI, LIQUIDITY_POOL_CONTRACT_ADDRESS, LIQUIDITY_POOL_ABI, WTIST_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS, QUOTER_ADDRESS, QUOTER_ABI
+from constants import SWAP_ROUTER_02_ADDRESS, SWAP_ROUTER_ABI, LIQUIDITY_POOL_CONTRACT_ADDRESS, LIQUIDITY_POOL_ABI, WTIST_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS, QUOTER_ADDRESS, QUOTER_ABI, CHAIN_ID, ERC20_ABI
 from util import format_units, parse_units, sqrt_price_X96_to_price
 from price import get_latest_price
 
@@ -35,37 +34,43 @@ pool_contract = web3.eth.contract(
 quoter_contract = web3.eth.contract(
     address=QUOTER_ADDRESS, abi=QUOTER_ABI)
 
+wtist_contract = web3.eth.contract(
+    address=WTIST_CONTRACT_ADDRESS, abi=ERC20_ABI)
 
-def swap_tokens(tokenIn, tokenOut, amountIn, poolFee, amountOutMinimum=0, sqrtPriceLimitX96=0):
+usdc_contract = web3.eth.contract(
+    address=USDC_CONTRACT_ADDRESS, abi=ERC20_ABI)
+
+
+def swap_tokens(token_in, token_out, amount_in, pool_fee, amount_out_min,
+                sqrtPriceLimitX96=0):
     try:
-        nonce = web3.eth.getTransactionCount(account.address)
+        nonce = web3.eth.get_transaction_count(account.address)
 
-        # Encode the path correctly for ExactInputSingle
-        transaction = swaprouter_contract.functions.ExactInputSingle(
+        transaction = swap_contract.functions.exactInputSingle(
             {
-                'tokenIn': tokenIn,
-                'tokenOut': tokenOut,
-                'fee': poolFee,  # Remember that this is a uint24
+                'tokenIn': token_in,
+                'tokenOut': token_out,
+                'fee': pool_fee,
                 'recipient': account.address,
-                'deadline': w3.eth.getBlock('latest')['timestamp'] + 60,
-                'amountIn': amountIn,
-                # Usually should be set to a non-zero value to prevent slippage
-                'amountOutMinimum': amountOutMinimum,
-                'sqrtPriceLimitX96': sqrtPriceLimitX96  # Usually set to 0 for no limit
+                'amountIn': amount_in,
+                'amountOutMinimum': amount_out_min,
+                'sqrtPriceLimitX96': sqrtPriceLimitX96
             }
-        ).buildTransaction({
-            'chainId': 421614,
+        ).build_transaction({
+            'chainId': CHAIN_ID,
             'from': account.address,
             'nonce': nonce,
-            'gasPrice': w3.eth.gas_price,
-            'gas': 3000000,  # Increased gas limit, might need to increase it even further
+            'gasPrice': web3.eth.gas_price,
+            'gas': 30000000
         })
 
-        signed_txn = w3.eth.account.signTransaction(
+        signed_txn = web3.eth.account.sign_transaction(
             transaction, private_key=PRIVATE_KEY)
-        tx_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-        print(f"Swap transaction hash: {w3.toHex(tx_hash)}")
-        w3.eth.waitForTransactionReceipt(tx_hash)
+
+        tx_hash = web3.eth.send_raw_transaction(signed_txn.raw_transaction)
+
+        logger.info(f"Swap transaction hash: {web3.to_hex(tx_hash)}")
+        web3.eth.wait_for_transaction_receipt(tx_hash)
 
     except Exception as e:
         print(f"Error swapping tokens: {e}")
@@ -114,13 +119,13 @@ def rebalancing(
         token_in,
         token_out,
         token_in_decimals
-) -> Tuple[float, float]:
+) -> Tuple[float, float, float]:
     logger.info(f"Target ratio: {target_ratio}")
 
     step = 0.1
     amount_in = step
-    (quote_price, _) = get_quote_price(token_in,
-                                       token_out, parse_units(amount_in, token_in_decimals))
+    (quote_price, amount_out) = get_quote_price(token_in,
+                                                token_out, parse_units(amount_in, token_in_decimals))
     logger.info(f"Initial quote price: {quote_price}")
 
     below = False
@@ -145,8 +150,8 @@ def rebalancing(
             logger.info(f"Quote price above target ratio: {
                         quote_price}, {target_ratio}")
 
-        (quote_price, _) = get_quote_price(token_in,
-                                           token_out, parse_units(amount_in, token_in_decimals))
+        (quote_price, amount_out) = get_quote_price(token_in,
+                                                    token_out, parse_units(amount_in, token_in_decimals))
         logger.info(f"Quote price: {quote_price}")
 
         if below and above:
@@ -161,7 +166,7 @@ def rebalancing(
         if abs(quote_price - target_ratio) < 0.001:
             break
 
-    return quote_price, amount_in
+    return quote_price, amount_in, amount_out
 
 
 def rebalance_pool():
@@ -188,25 +193,78 @@ def rebalance_pool():
                         deviation:.2%}. Rebalancing...")
 
             try:
+                quote_price = None
+                token_in = None
+                token_out = None
+                amount_in = None
+                amount_out_min = None
+                amount_out = None
+
                 # Sell WTIST, buy USDC
                 if current_ratio > target_ratio * (1 + tolerance):
                     logger.info("Sell WTIST, buy USDC")
 
-                    (quote_price, amount_in) = rebalancing(target_ratio,
-                        WTIST_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS, 18)
+                    (quote_price, amount_in, amount_out) = rebalancing(
+                        target_ratio,
+                        WTIST_CONTRACT_ADDRESS,
+                        USDC_CONTRACT_ADDRESS,
+                        18
+                    )
 
                     logger.info(f"Final Quote price: {quote_price}")
                     logger.info(f"Final amount in: {amount_in} WTIST")
+
+                    token_in = WTIST_CONTRACT_ADDRESS
+                    token_out = USDC_CONTRACT_ADDRESS
+                    amount_in = parse_units(amount_in, 18)
+                    amount_out_min = parse_units(
+                        format_units(amount_out, 6) * 0.9, 6)
+
+                    wtist_contract.functions.approve(
+                        SWAP_ROUTER_02_ADDRESS, amount_in).build_transaction(
+                        {"from": account.address}
+                    )
 
                 # Sell USDC, buy WTIST
                 else:
                     logger.info("Sell USDC, buy WTIST")
 
-                    (quote_price, amount_in) = rebalancing(
-                        target_ratio, USDC_CONTRACT_ADDRESS, WTIST_CONTRACT_ADDRESS, 6)
+                    (quote_price, amount_in, amount_out) = rebalancing(
+                        target_ratio,
+                        USDC_CONTRACT_ADDRESS,
+                        WTIST_CONTRACT_ADDRESS,
+                        6
+                    )
 
                     logger.info(f"Final Quote price: {quote_price}")
                     logger.info(f"Final amount in: {amount_in} USDC")
+
+                    token_in = USDC_CONTRACT_ADDRESS
+                    token_out = WTIST_CONTRACT_ADDRESS
+                    amount_in = parse_units(amount_in, 6)
+                    amount_out_min = parse_units(
+                        format_units(amount_out, 18) * 0.9, 18)
+
+                    usdc_contract.functions.approve(
+                        SWAP_ROUTER_02_ADDRESS, amount_in).build_transaction(
+                        {"from": account.address}
+                    )
+
+                if quote_price is not None and abs(quote_price - target_ratio) < 5:
+                    logger.info("Swapping tokens...")
+
+                    swap_tokens(token_in, token_out, amount_in, 10000,
+                                amount_out_min, 0)
+
+                    logger.info("Amount in: " + str(amount_in))
+                    logger.info("Amount out min: " + str(amount_out_min))
+
+                    logger.info("Rebalancing completed.")
+
             except Exception as e:
                 logger.error(f"Error rebalancing pool: {e}")
                 logger.info("Trying again in 2 minutes...")
+
+
+if __name__ == "__main__":
+    rebalance_pool()

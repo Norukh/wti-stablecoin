@@ -2,12 +2,18 @@
 This is the repository for the python backend code of the WTIST Stablecoin project.
 
 ## Python
-Install from requirements
+Run the gunicorn server with two workers.
+The code will also initialize a SQLite db called `oil.db`.
+```bash
+gunicorn -w 2 -b 0.0.0.0:4500 main:app 
+```
+
+Install from requirements with pip:
 ```bash
 pip install --no-cache-dir -r requirements.txt
 ```
 
-Set requirements
+Store requirements with pip:
 ```bash
 pip freeze > requirements.txt
 ```

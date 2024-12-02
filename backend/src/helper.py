@@ -3,23 +3,21 @@ import json
 import time
 
 from constants import WTIST_CONTRACT_ADDRESS
+from price import get_latest_price
+from util import format_units
 
-current_eth_price = fetch_eth_price()
 headers = {
     "Content-Type": "application/json"
 }
 infura_url = "https://arbitrum-sepolia.infura.io/v3/617c65d94c2b42d6a5845e2ebc63928a"
-contract_address = WTIST_CONTRACT_ADDRESS.lower()
+contract_address = WTIST_CONTRACT_ADDRESS
 WTI_rest = 0
-# contract_address = "0x48d848f8a1d1541e82f7ed1348cf58c5d63d9fab".lower()  #Contract for testing backend
-# contract_address = "0xfF09968a22768Ae9699f89b8B051Ec78dB81aDDB".lower()
 
 
 def get_block_details(block_number):
     payload = {
         "jsonrpc": "2.0",
         "method": "eth_getBlockByNumber",
-        # True to include full transaction objects
         "params": [hex(block_number), True],
         "id": 1
     }
@@ -61,7 +59,7 @@ def fetch_eth_price():
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            return data["ethereum"]["usd"]  # Return the ETH price in USD
+            return data["ethereum"]["usd"]
         else:
             print(f"Error: Failed to fetch ETH price. HTTP Status: {response.status_code}")
     except Exception as e:
@@ -69,6 +67,7 @@ def fetch_eth_price():
     return None
 
 
+# not used
 def read_wti_price():
     arbitrum_rpc_url = "https://arb1.arbitrum.io/rpc"
 
@@ -115,43 +114,51 @@ def poll_blockchain():
     one_minute_ago = int(time.time()) - 60  # Get Unix time for 1 minute ago
     last_block = None
     amount_purchased = 0
-    while True:
-        new_eth_price = fetch_eth_price()
-        # update eth price to keep correct values (sometimes None)
-        if new_eth_price is not None:
-            print(f"New ETH price: {new_eth_price}")
-            current_eth_price = new_eth_price
-        print("Polling for the latest block...")
-        latest_block = get_latest_block()
 
-        if latest_block is not None:
-            if last_block is None or latest_block > last_block:
-                # Iterate over all blocks between last_block and latest_block
-                for block_num in range(last_block + 1 if last_block else latest_block, latest_block + 1):
-                    block_details = get_block_details(block_num)
-                    if block_details is not None and 'timestamp' in block_details:
-                        block_timestamp = int(block_details['timestamp'], 16)
-                        # Check if the block is within the last minute
-                        if block_timestamp >= one_minute_ago:
-                            if 'transactions' in block_details:
-                                for tx in block_details['transactions']:
-                                    if tx['to'].lower() == contract_address:
-                                        # print(f"Transaction involving contract found in block {block_num}:")
-                                        # print(f"Tx Hash: {tx['hash']}")
-                                        # print(f"From: {tx['from']}")
-                                        # print(f"To: {tx['to']}")
-                                        # print(f"Value: {int(tx['value'], 16) / (10 ** 18)} ETH")
-                                        amount_purchased += int(tx['value'], 16) / (
-                                            10 ** 18) * current_eth_price
-                last_block = latest_block
-                one_minute_ago = int(time.time()) - 60
-            current_wti_price = read_wti_price()
-            amountoilpurchased = amount_purchased / current_wti_price
-            amountoilpurchased += WTI_rest
-            WTI_rest = amountoilpurchased % 1
-            print(f"WTI rest value: {WTI_rest}")
-            if amountoilpurchased > 0:
-                adjust_oil_value(int(amountoilpurchased))
+    new_eth_price = fetch_eth_price()
+    # update eth price to keep correct values (sometimes None)
+    if new_eth_price is not None:
+        print(f"New ETH price: {new_eth_price}")
+        current_eth_price = new_eth_price
+    print("Polling for the latest block...")
+    latest_block = get_latest_block()
+
+    if latest_block is not None:
+        if last_block is None or latest_block > last_block:
+            # Iterate over all blocks between last_block and latest_block
+            for block_num in range(last_block + 1 if last_block else latest_block, latest_block + 1):
+                block_details = get_block_details(block_num)
+                if block_details is not None and 'timestamp' in block_details:
+                    block_timestamp = int(block_details['timestamp'], 16)
+                    # Check if the block is within the last minute
+                    if block_timestamp >= one_minute_ago:
+
+                        if 'transactions' in block_details:
+
+                            for tx in block_details['transactions']:
+                                if tx['to'] == contract_address:
+                                    amount_purchased += int(tx['value'], 16) / (10 ** 18) * current_eth_price
+                                if tx['from'] == contract_address:
+                                    amount_purchased -= int(tx['value'], 16) / (10 ** 18) * current_eth_price
+
+            last_block = latest_block
+            one_minute_ago = int(time.time()) - 60
+
+        latest_wti_price = get_latest_price()
+        if latest_wti_price is not None:
+            print(f"Latest WTI price: {latest_wti_price}")
+            current_wti_price = format_units(latest_wti_price['price'], latest_wti_price['decimals'])
+            print(f"Current WTI price: {current_wti_price}")
         else:
-            print("Failed to get the latest block number.")
-        time.sleep(60)  # Polling interval
+            print("Failed to get the latest WTI price.")
+
+        amountoilpurchased = amount_purchased / current_wti_price
+        amountoilpurchased += WTI_rest
+
+        WTI_rest = amountoilpurchased % 1
+        print(f"WTI rest value: {WTI_rest}")
+
+        return amountoilpurchased
+    else:
+        print("Failed to get the latest block number.")
+        return None

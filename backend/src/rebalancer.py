@@ -76,10 +76,6 @@ def swap_tokens(token_in, token_out, amount_in, pool_fee, amount_out_min,
         print(f"Error swapping tokens: {e}")
 
 
-def rebalance_liquidity():
-    pass
-
-
 def get_quote_price(token_in, token_out, amount_in, pool_fee=10000, sqrt_price_limit_x96=0):
     amount_out_data = quoter_contract.functions.quoteExactInputSingle({
         "tokenIn": token_in,
@@ -137,22 +133,16 @@ def rebalancing(
 
     for i in range(1, 100):
         logger.info("----")
-        logger.info("Amount in: " + str(amount_in))
-        amount_in = change(amount_in)
-        logger.info("Amount in: " + str(amount_in))
 
         if quote_price < target_ratio:
             below = True
-            logger.info(f"Quote price below target ratio: {
-                        quote_price}, {target_ratio}")
         else:
             above = True
-            logger.info(f"Quote price above target ratio: {
-                        quote_price}, {target_ratio}")
 
         (quote_price, amount_out) = get_quote_price(token_in,
                                                     token_out, parse_units(amount_in, token_in_decimals))
-        logger.info(f"Quote price: {quote_price}")
+        logger.info(
+            f"Quote price: {quote_price}, Target ratio: {target_ratio}")
 
         if below and above:
             if change == plus:

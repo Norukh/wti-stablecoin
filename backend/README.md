@@ -1,6 +1,15 @@
 # WTIST Backend
 This is the repository for the python backend code of the WTIST Stablecoin project.
 
+## Environment
+Create a `.env`-file with the following contents for the python backend to be able to access contract functions.
+The file needs to be in this `/backend` folder.
+
+```bash
+PROVIDER_URL=https://sepolia-rollup.arbitrum.io/rpc
+PRIVATE_KEY=<private-key-of-wallet>
+```
+
 ## Python
 Run the gunicorn server with two workers.
 The code will also initialize a SQLite db called `oil.db`.

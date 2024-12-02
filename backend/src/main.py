@@ -1,10 +1,12 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import sqlite3
 
 from constants import OIL_DB_PATH
 from price import get_latest_price
 
 app = Flask(__name__)
+CORS(app)
 
 
 def init_db():
@@ -80,4 +82,5 @@ def get_current_price():
 if __name__ == '__main__':
     init_db()
     app.run(use_reloader=False, host='0.0.0.0')
+
 

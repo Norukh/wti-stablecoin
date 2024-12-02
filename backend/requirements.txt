@@ -20,6 +20,7 @@ eth-typing==5.0.1
 eth-utils==5.1.0
 eth_abi==5.1.0
 Flask==3.0.3
+Flask-Cors==5.0.0
 frozenlist==1.5.0
 gitdb==4.0.11
 GitPython==3.1.41

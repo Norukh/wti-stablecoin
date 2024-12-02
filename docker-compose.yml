@@ -32,6 +32,8 @@ services:
       context: frontend
       dockerfile: Dockerfile
     restart: always
+    environment:
+      - VUE_APP_API_URL=http://localhost:5500
     networks:
       - wtist
     ports:

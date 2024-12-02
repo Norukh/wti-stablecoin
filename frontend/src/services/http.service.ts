@@ -1,7 +1,8 @@
 import axios from 'axios'
+import { API_URL } from '../utils/constants'
 
 export default axios.create({
-  baseURL: 'http://localhost:8000/',
+  baseURL: API_URL,
   params: {
     // API params go here
   }

@@ -1,12 +1,17 @@
 import http from './http.service'
+import { formatUnits } from 'ethers'
 
 export default class OilService {
-    getPrice() {
-        return http.get('/oil/price')
+    async getPrice() {
+        return http.get('/price').then((response) => {
+            return Number(formatUnits(response.data.price, response.data.decimals)).toFixed(2)
+        })
     }
 
-    calculateBarrelsInUSD(amount: number) {
-        return Math.round(amount)
+    async calculateBarrelsInUSD(amount: number) {
+        return http.get('/price').then((response) => {
+            return (amount * Number(formatUnits(response.data.price, response.data.decimals))).toFixed(2)
+        })
     }
   }
   

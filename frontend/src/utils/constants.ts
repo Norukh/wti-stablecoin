@@ -1,4 +1,5 @@
-export const API_URL = "";
+export const API_URL = import.meta.env.VUE_APP_API_URL || "http://localhost:5500"
+
 
 export const USDC_CONTRACT_ADDRESSES = {
     arbSepolia: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",

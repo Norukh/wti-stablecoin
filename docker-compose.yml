@@ -4,7 +4,6 @@ services:
       context: backend
       dockerfile: Dockerfile
     restart: always
-    command: gunicorn -w 2 -b 0.0.0.0:5500 main:app
     networks:
       - wtist
     ports:
@@ -38,6 +37,8 @@ services:
       - wtist
     ports:
       - "3500:80"
+    depends_on:
+      - wtist-flask
 
 networks:
   wtist:

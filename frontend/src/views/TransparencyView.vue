@@ -4,13 +4,16 @@ import Panel from 'primevue/panel'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
 
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Dialog from 'primevue/dialog'
 
 import { oilService } from '../services/oil.service'
 
 const currentOilSupply = ref(0)
 const transactions = ref([])
+
+const transactionsVisible = ref<boolean>(false)
 
 oilService.getCurrentOilSupply().then((res) => {
   currentOilSupply.value = res.amount
@@ -31,7 +34,7 @@ oilService.getTransactions().then((res) => {
     </p>
 
     <div class="card mt-4">
-      <Panel toggleable>
+      <Panel toggleable collapsed>
         <template #header>
           <div class="flex items-center gap-2">
             <Avatar
@@ -51,16 +54,9 @@ oilService.getTransactions().then((res) => {
 
         <p>{{ currentOilSupply }} Barrels.</p>
 
-        <p class="font-bold mt-4">
-          Last 10 Transactions
-        </p>
+        <p class="font-bold mt-4">Last 10 Transactions</p>
 
-        <DataTable :value="transactions" class="mt-4">
-            <Column field="timestamp" header="Time"></Column>
-            <Column field="action" header="Action"></Column>
-            <Column field="amount" header="Amount"></Column>
-            <Column field="position" header="Position"></Column>
-        </DataTable>
+        <Button class="mt-2" label="Show Transactions" @click="transactionsVisible = true" icon="pi pi-truck" />
 
         <p class="m-0 mt-4">
           The WTIST stablecoin is backed by oil reserves. The Western Texas Intermediate oil
@@ -71,7 +67,7 @@ oilService.getTransactions().then((res) => {
     </div>
 
     <div class="card mt-4">
-      <Panel toggleable>
+      <Panel toggleable collapsed>
         <template #header>
           <div class="flex items-center gap-2">
             <Avatar
@@ -113,5 +109,19 @@ oilService.getTransactions().then((res) => {
         />
       </Panel>
     </div>
+
+    <Dialog
+      v-model:visible="transactionsVisible"
+      modal
+      header="Last 10 Transactions"
+      :style="{ width: '35rem' }"
+    >
+      <DataTable :value="transactions" class="mt-4">
+        <Column field="timestamp" header="Time"></Column>
+        <Column field="action" header="Action"></Column>
+        <Column field="amount" header="Amount"></Column>
+        <Column field="position" header="Position"></Column>
+      </DataTable>
+    </Dialog>
   </div>
 </template>

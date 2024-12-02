@@ -58,13 +58,13 @@ def get_transactions():
 
     new_transactions = []
     for i, transaction in enumerate(transactions):
-        new_transactions[i] = {
+        new_transactions.append({
             "id": transaction[0],
             "timestamp": transaction[1],
             "action": transaction[2],
             "amount": transaction[3],
             "position": transaction[4]
-        }
+        })
 
     conn.close()
     return jsonify(new_transactions)

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { BigNumberish } from 'ethers'
 import { ethers, parseUnits, formatUnits } from 'ethers'
 import QuoterV2 from '@uniswap/v3-periphery/artifacts/contracts/lens/QuoterV2.sol/QuoterV2.json'
 import SwapRouter02 from '@uniswap/swap-router-contracts/artifacts/contracts/SwapRouter02.sol/SwapRouter02.json'
@@ -98,7 +99,7 @@ const switchTokens = () => {
   receiveToken.value = temp
 }
 
-async function getAmountOut(signer: any, parsedAmountIn) {
+async function getAmountOut(signer: ethers.Signer, parsedAmountIn: string) {
   const quoterContractAddress = UNISWAP_QUOTER_ADDRESSES[chain]
   const quoterAbi = QuoterV2.abi
 
@@ -145,7 +146,7 @@ async function calculateBuyPrice(isPay = true) {
     return
   }
   
-  const amountOutData = await getAmountOut(signer, parsedAmountIn)
+  const amountOutData = await getAmountOut(signer, parsedAmountIn.toString())
 
   console.log('Amount out data:', amountOutData)
 
@@ -157,7 +158,7 @@ async function calculateBuyPrice(isPay = true) {
   swapStatus.value = `New price after swapping 1 WTIST = ${convertX96ToPrice(amountOutData.sqrtPriceX96After)} USDC`
 }
 
-async function getAmountOutMin(signer, inAmount, outDecimals) {
+async function getAmountOutMin(signer: ethers.Signer, inAmount: string, outDecimals: number) {
   const amountOutData = await getAmountOut(signer, inAmount)
 
   console.log(amountOutData)
@@ -191,20 +192,20 @@ async function swapTokens() {
 
   swapStatus.value = 'Approving tokens...'
 
-  let usdcAmount = 0
-  let wtistAmount = 0
-  let amountOutMin = 0
+  let usdcAmount: BigNumberish = 0
+  let wtistAmount: BigNumberish = 0
+  let amountOutMin: string = '0'
 
   if (payToken.value.symbol === 'USDC') {
     usdcAmount = parseUnits(payToken.value.value!.toString(), usdcDecimals)
     const usdcApprove = await usdcContract.approve(swapContractAddress, usdcAmount)
-    amountOutMin = await getAmountOutMin(signer, usdcAmount, wtistDecimals)
+    amountOutMin = (await getAmountOutMin(signer, usdcAmount.toString(), Number(wtistDecimals))).toString()
 
     console.log('USDC approve:', usdcApprove)
   } else {
     wtistAmount = parseUnits(payToken.value.value!.toString(), wtistDecimals)
     const wtistApprove = await wtistContract.approve(swapContractAddress, wtistAmount)
-    amountOutMin = await getAmountOutMin(signer, wtistAmount, usdcDecimals)
+    amountOutMin = (await getAmountOutMin(signer, wtistAmount.toString(), Number(usdcDecimals))).toString()
 
     console.log('WTIST approve:', wtistApprove)
   }
@@ -378,7 +379,7 @@ getSwapPrice()
           </Message>
         </div>
 
-        <Message v-if="swapStatus" severity="info" variant="filled" size="small">
+        <Message v-if="swapStatus" severity="info" size="small">
           <p>
             {{ swapStatus }}
           </p>
@@ -405,7 +406,7 @@ getSwapPrice()
           </p>
         </Message>
 
-        <Message v-if="highPriceImpact" severity="warn" variant="filled" size="small"
+        <Message v-if="highPriceImpact" severity="warn" size="small"
           >High price impact! Dangerous to swap as it may result in a bad price.
         </Message>
       </div>

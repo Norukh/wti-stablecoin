@@ -169,16 +169,27 @@ https://docs.uniswap.org/concepts/protocol/concentrated-liquidity
 => Lower tick steps usually better for stablecoin.
 
 ### Backend
+**Technologies used:** Solidity, Hardhat, [multisol](https://github.com/PaulRBerg/multisol) (for contract verification on Arbiscan), Python, various Python libraries, Flask
 
-**Technologies used:** Solidity, Hardhat, [multisol](https://github.com/PaulRBerg/multisol) (for contract verification on Arbiscan), Python
-
-The backend is written
+The offchain backend responsible for the rebalancing is mainly written in python. 
+The rebalancing is described separately in this document.
 
 #### REST API
+The REST API was build on Flask a python library to create simple API-endpoints. 
+The documentation of the REST API is as follows for the python API:
+
+| **Method** | **Endpoint**  | **Description**                                                     |
+|------------|---------------|---------------------------------------------------------------------|
+| GET        | /transactions | Fetches the last 10 transactions and orders them descending by time |
+| GET        | /oil          | Returns the current amount of collaterization for WTI oil           |
+| POST       | /oil          | Adds a transaction to the oil transaction history (buy and sell)    |
+| GET        | /price        | Fetches the current price of WTI/USD from a Chainlink data feed     |
 
 ### Frontend
-
 **Technologies used:** Node, Vue.js, Vite, Typescript, [ethers.js (v6)](https://docs.ethers.org/v6/), [PrimeVue](https://primevue.org/)
+
+The frontend is built as a single page application (SPA). It interacts with the backend by API calls with the axios library and by the ethers library with the blockchain.
+The code gets built using Vite and gets packaged in the Dockerfile to host with nginx.
 
 To test the ethers.js package open the following website:
 [Ethers Playground](https://playground.ethers.org/)
@@ -207,14 +218,14 @@ To test the ethers.js package open the following website:
 
    > **Make sure that your wallet has enough WTIST and USDCs to perform the Swaps**
 
-3. Start the application
+3. Start the application (you must be in the root folder)
    ```shell 
    docker compose up --build
    ```
 
 4. Explore and have fun 😃
 
-Open your Webbrowser, navigate to http://localhost:5173 and explore our WTIST Stablecoin App ✨ 🚀 !
+Open your Webbrowser, navigate to http://localhost:3500 and explore our WTIST Stablecoin App ✨ 🚀 !
 
 
 ## Usage for development

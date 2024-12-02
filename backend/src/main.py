@@ -38,7 +38,7 @@ def init_db():
     entry = cursor.fetchone()
 
     if not entry:
-        cursor.execute("INSERT INTO transactions (action, amount) VALUES ('INITIAL', 100)")
+        cursor.execute("INSERT INTO transactions (action, amount) VALUES ('INITIAL', 1000)")
         conn.commit()
         logger.info("Initialized database")
 
@@ -55,8 +55,19 @@ def get_transactions():
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT 10")
     transactions = cursor.fetchall()
+
+    new_transactions = []
+    for i, transaction in enumerate(transactions):
+        new_transactions[i] = {
+            "id": transaction[0],
+            "timestamp": transaction[1],
+            "action": transaction[2],
+            "amount": transaction[3],
+            "position": transaction[4]
+        }
+
     conn.close()
-    return jsonify(transactions)
+    return jsonify(new_transactions)
 
 
 @app.route('/oil', methods=['GET'])

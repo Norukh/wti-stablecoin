@@ -1,7 +1,25 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import Panel from 'primevue/panel'
 import Avatar from 'primevue/avatar'
 import Button from 'primevue/button'
+
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+
+import { oilService } from '../services/oil.service'
+
+const currentOilSupply = ref(0)
+const transactions = ref([])
+
+oilService.getCurrentOilSupply().then((res) => {
+  currentOilSupply.value = res.amount
+})
+
+oilService.getTransactions().then((res) => {
+  transactions.value = res
+  console.log(res)
+})
 </script>
 
 <template>
@@ -29,7 +47,22 @@ import Button from 'primevue/button'
           </div>
         </template>
 
-        <p class="m-0">
+        <p class="font-bold">Current Reserves:</p>
+
+        <p>{{ currentOilSupply }} Barrels.</p>
+
+        <p class="font-bold mt-4">
+          Last 10 Transactions
+        </p>
+
+        <DataTable :value="transactions" class="mt-4">
+            <Column field="timestamp" header="Time"></Column>
+            <Column field="action" header="Action"></Column>
+            <Column field="amount" header="Amount"></Column>
+            <Column field="position" header="Position"></Column>
+        </DataTable>
+
+        <p class="m-0 mt-4">
           The WTIST stablecoin is backed by oil reserves. The Western Texas Intermediate oil
           reserves are stored in secure locations around the world and are audited regularly to
           ensure that the reserves are sufficient to back the WTIST stablecoin.

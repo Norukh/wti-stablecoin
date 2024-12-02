@@ -10,6 +10,7 @@ import InputText from 'primevue/inputtext'
 import FloatLabel from 'primevue/floatlabel'
 import Message from 'primevue/message'
 import { ref } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import {
   UNISWAP_SWAP_ROUTER_ADDRESSES,
   USDC_CONTRACT_ADDRESSES,
@@ -18,6 +19,8 @@ import {
   UNISWAP_QUOTER_ADDRESSES
 } from '@/utils/constants'
 import { convertX96ToPrice } from '@/utils/price'
+
+const toast = useToast()
 
 const props = defineProps({
   provider: Object,
@@ -30,8 +33,12 @@ const poolFee = 10000
 const isInvalidAmountPay = ref<boolean>(false)
 const isInvalidAmountReceive = ref<boolean>(false)
 
+const highPriceImpact = ref<boolean>(false)
+
 const swapStatus = ref<string>('')
 const loadingSwap = ref<boolean>(false)
+
+const transactionHash = ref<string>('')
 
 type Token = {
   symbol: string
@@ -91,9 +98,7 @@ const switchTokens = () => {
   receiveToken.value = temp
 }
 
-async function calculateBuyPrice(isPay = true) {
-  const signer = await props.provider?.getSigner()
-
+async function getAmountOut(signer: any, parsedAmountIn) {
   const quoterContractAddress = UNISWAP_QUOTER_ADDRESSES[chain]
   const quoterAbi = QuoterV2.abi
 
@@ -101,21 +106,6 @@ async function calculateBuyPrice(isPay = true) {
   const wtistContractAddress = WTIST_CONTRACT_ADDRESSES[chain]
 
   const quoterContract = new ethers.Contract(quoterContractAddress, quoterAbi, signer)
-
-  const decPay = payToken.value.symbol === 'USDC' ? 6 : 18
-  const amountIn = isPay ? payToken.value.value : receiveToken.value.value
-
-  if (amountIn === undefined || amountIn === '') {
-    receiveToken.value.value = ''
-    return
-  }
-
-  const parsedAmountIn = parseUnits(amountIn!.toString(), decPay)
-
-  if (parsedAmountIn.valueOf() <= 0) {
-    receiveToken.value.value = ''
-    return
-  }
 
   const amountOutData = await quoterContract.quoteExactInputSingle
     .staticCall({
@@ -134,10 +124,48 @@ async function calculateBuyPrice(isPay = true) {
       }
     })
 
+  return amountOutData
+}
+
+async function calculateBuyPrice(isPay = true) {
+  const signer = await props.provider?.getSigner()
+
+  const decPay = payToken.value.symbol === 'USDC' ? 6 : 18
+  const amountIn = isPay ? payToken.value.value : receiveToken.value.value
+
+  if (amountIn === undefined || amountIn === '') {
+    receiveToken.value.value = ''
+    return
+  }
+
+  const parsedAmountIn = parseUnits(amountIn!.toString(), decPay)
+
+  if (parsedAmountIn.valueOf() <= 0) {
+    receiveToken.value.value = ''
+    return
+  }
+  
+  const amountOutData = await getAmountOut(signer, parsedAmountIn)
+
   console.log('Amount out data:', amountOutData)
 
   const decReceive = receiveToken.value.symbol === 'USDC' ? 6 : 18
   receiveToken.value.value = formatUnits(amountOutData.amountOut, decReceive).slice(0, 10)
+
+  highPriceImpact.value = amountOutData.initializedTicksCrossed == 1
+
+  swapStatus.value = `New price after swapping 1 WTIST = ${convertX96ToPrice(amountOutData.sqrtPriceX96After)} USDC`
+}
+
+async function getAmountOutMin(signer, inAmount, outDecimals) {
+  const amountOutData = await getAmountOut(signer, inAmount)
+
+  console.log(amountOutData)
+
+  const amountOut = formatUnits(amountOutData.amountOut, outDecimals).slice(0, 5)
+  const amountOutNew = (Number(amountOut) * 0.9).toFixed(5)
+
+  return parseUnits(amountOutNew.toString(), outDecimals)
 }
 
 async function swapTokens() {
@@ -161,31 +189,67 @@ async function swapTokens() {
   const usdcDecimals = await usdcContract.decimals()
   const wtistDecimals = await wtistContract.decimals()
 
-  const usdcAmount = parseUnits(payToken.value.value!.toString(), usdcDecimals)
-  const wtistAmount = parseUnits(receiveToken.value.value!.toString(), wtistDecimals)
+  swapStatus.value = 'Approving tokens...'
 
-  console.log('USDC amount:', usdcAmount.toString())
-  console.log('WTIST amount:', wtistAmount.toString())
+  let usdcAmount = 0
+  let wtistAmount = 0
+  let amountOutMin = 0
 
   if (payToken.value.symbol === 'USDC') {
+    usdcAmount = parseUnits(payToken.value.value!.toString(), usdcDecimals)
     const usdcApprove = await usdcContract.approve(swapContractAddress, usdcAmount)
+    amountOutMin = await getAmountOutMin(signer, usdcAmount, wtistDecimals)
+
     console.log('USDC approve:', usdcApprove)
   } else {
+    wtistAmount = parseUnits(payToken.value.value!.toString(), wtistDecimals)
     const wtistApprove = await wtistContract.approve(swapContractAddress, wtistAmount)
+    amountOutMin = await getAmountOutMin(signer, wtistAmount, usdcDecimals)
+
     console.log('WTIST approve:', wtistApprove)
   }
 
-  const swap = await swapContract.exactInputSingle({
-    tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
-    tokenOut: receiveToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
-    fee: poolFee,
-    recipient: await signer.getAddress(),
-    amountIn: payToken.value.symbol === 'USDC' ? usdcAmount : wtistAmount,
-    amountOutMinimum: 0,
-    sqrtPriceLimitX96: 0
-  })
+  console.log('Amount out min:', amountOutMin)
 
-  console.log('Swap:', swap)
+  try {
+    swapStatus.value = 'Approval successful. Swapping tokens...'
+
+    const swapTx = await swapContract.exactInputSingle({
+      tokenIn: payToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+      tokenOut: receiveToken.value.symbol === 'USDC' ? usdcContractAddress : wtistContractAddress,
+      fee: poolFee,
+      recipient: await signer.getAddress(),
+      amountIn: payToken.value.symbol === 'USDC' && usdcAmount !== 0 ? usdcAmount : wtistAmount,
+      amountOutMinimum: amountOutMin,
+      sqrtPriceLimitX96: 0
+    })
+    console.log('Transaction hash:', swapTx)
+
+    const receipt = await swapTx.wait()
+    console.log('Transaction Receipt:', receipt)
+
+    swapStatus.value = 'Swap successful!'
+    transactionHash.value = swapTx.hash
+    loadingSwap.value = false
+
+    toast.add({
+      severity: 'success',
+      summary: 'Swap successful!',
+      detail: `Gas used: ${receipt.gasUsed}, Transaction hash: ${swapTx.hash}`,
+      life: 5000
+    })
+  } catch (error: any) {
+    console.error('Swap error:', error)
+
+    swapStatus.value = 'Swap failed'
+
+    toast.add({
+      severity: 'error',
+      summary: 'Swap failed',
+      detail: error.message.toString(),
+      life: 5000
+    })
+  }
 }
 
 async function evaluateSwap() {
@@ -213,7 +277,10 @@ async function evaluateSwap() {
   }
 
   swapStatus.value = ''
+  transactionHash.value = ''
   loadingSwap.value = true
+
+  swapStatus.value = 'Swapping tokens...'
 
   await swapTokens()
 
@@ -301,6 +368,7 @@ getSwapPrice()
                 v-model="receiveToken.value"
                 :invalid="isInvalidAmountReceive"
                 @keydown="isInvalidAmountReceive = false"
+                disabled
               />
               <label for="in_label2">Buy</label>
             </FloatLabel>
@@ -309,16 +377,49 @@ getSwapPrice()
             >Valid amount for buying {{ receiveToken.symbol }} is required
           </Message>
         </div>
+
+        <Message v-if="swapStatus" severity="info" variant="filled" size="small">
+          <p>
+            {{ swapStatus }}
+          </p>
+        </Message>
+
+        <Message
+          severity="success"
+          size="small"
+          v-if="!loadingSwap && transactionHash"
+          class="mt-4 w-full"
+        >
+          <p>
+            Transaction successful. Check your wallet for the transfer. Check the transaction
+            <Button
+              as="a"
+              variant="link"
+              size="small"
+              :href="`https://sepolia.arbiscan.io/tx/${transactionHash}`"
+              target="_blank"
+              rel="noopener noreferrer"
+              label="here"
+            />
+            on Sepolia Arbiscan.
+          </p>
+        </Message>
+
+        <Message v-if="highPriceImpact" severity="warn" variant="filled" size="small"
+          >High price impact! Dangerous to swap as it may result in a bad price.
+        </Message>
       </div>
     </template>
     <template #footer>
       <div class="flex gap-4 mt-5 flex-col">
         <Button
+          :loading="loadingSwap"
           label="Swap"
           severity="primary"
           outlined
           class="w-full text-center grow"
           @click="evaluateSwap"
+          :disabled="highPriceImpact || loadingSwap"
         />
 
         <div class="flex justify-center flex-col gap-1">

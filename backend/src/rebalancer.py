@@ -253,7 +253,7 @@ def rebalance_pool():
 
             except Exception as e:
                 logger.error(f"Error rebalancing pool: {e}")
-                logger.info("Trying again in 2 minutes...")
+                logger.info("Trying again in 5 minutes...")
 
 
 if __name__ == "__main__":

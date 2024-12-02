@@ -13,6 +13,18 @@ export default class OilService {
             return (amount * Number(formatUnits(response.data.price, response.data.decimals))).toFixed(2)
         })
     }
+
+    async getTransactions() {
+        return http.get('/transactions').then((response) => {
+            return response.data
+        })
+    }
+
+    async getCurrentOilSupply() {
+        return http.get('/oil').then((response) => {
+            return response.data
+        })
+    }
   }
   
   export const oilService = new OilService()

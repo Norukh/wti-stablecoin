@@ -82,12 +82,26 @@ To do so we do the following checks regularly with our backend application:
 2. If the balance of WTIST is below 1'000 WTIST, we mint another 500'000 WTIST.
 
 ### Future Opportunities
-In the future the stablecoin tokenomics can be enhanced by incentivising users to stake their tokens in a liquidity pool with a Uniswap staker.
-Another idea is to offer users of our App the possibility to buy and sell stablecoins directly on the App. 
-This ensures that the users are getting an opportunity to get the stablecoin at the best price possible, even when there are fluctuations on the DEX.
+
+#### Strategic Development
+1. Liquidity Pool Incentivization
+    - Implement Uniswap staking rewards
+    - Encourage long-term token holding
+    - Create economic incentives for liquidity providers
+
+2. Direct Trading Integration
+    - In-app buy/sell functionality
+    - Real-time price optimization
+    - Minimize external DEX volatility exposure
+
+3. Advanced Risk Mitigation
+    - Expand over-collateralization strategy
+    - Implement dynamic collateral adjustment
+    - Develop comprehensive hedging mechanisms
 
 #### Risk Management
-- Over collateralization 10%
+- Over Collateralization
+- Transparent reserve reporting
 
 ## Infrastructure
 The diagram below explains the infrastructure overview of the dockerized application. 
@@ -166,9 +180,27 @@ To test the ethers.js package open the following website:
    ```
     > **Make sure that your wallet has enough WTIST and USDCs to perform the Swaps**
 
-3. DOCKER COMPOSE #TODO NICO
+3. Start the application
+   ```shell 
+   docker compose up --build
+   ```
+
+4. Explore and have fun 😃
+
+Open your Webbrowser, navigate to http://localhost:5173 and explore our WTIST Stablecoin App ✨ 🚀 !
+
 
 ## Usage for development
+
+### Backend
+
+See the `README.md` in the `backend` folder.
+
+### Frontend
+
+See the `README.md` in the `frontend` folder.
+
+### Hardhat (For Testing SmartContracts locally)
 
 ```shell
 # compile the solidity code
@@ -177,7 +209,7 @@ yarn hardhat compile
 # run a single local node
 yarn hardhat node
 
-# deploy to localhost
+# deploy WTIST to localhost
 yarn hardhat run scripts/deploy.ts --network localhost 
 
 # set variables

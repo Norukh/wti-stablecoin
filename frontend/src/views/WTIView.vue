@@ -92,7 +92,6 @@ async function disconnectWallet() {
 }
 
 async function calculateBarrels(wtist: number) {
-  console.log('wtist', wtist)
   return `$ ${await oilService.calculateBarrelsInUSD(wtist)} - at $ ${await oilService.getPrice()} per barrel`
 }
 </script>

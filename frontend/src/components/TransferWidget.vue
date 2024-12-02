@@ -27,9 +27,9 @@ const isInsufficientBalance = ref<boolean>(false)
 const estimatedGas = ref('')
 const transferStatus = ref('')
 
-const loadingTransfer = ref(false)
+const loadingTransfer = ref<boolean>(false)
 
-const transactionHash = ref('')
+const transactionHash = ref<string>('')
 
 type Transfer = {
   recipientAddress: string

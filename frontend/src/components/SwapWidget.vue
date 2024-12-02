@@ -191,8 +191,8 @@ async function swapTokens() {
 async function evaluateSwap() {
   if (
     payToken.value.value === undefined ||
-    payToken.value.value <= 0 ||
-    isNaN(payToken.value.value)
+    Number(payToken.value.value) <= 0 ||
+    isNaN(Number(payToken.value.value))
   ) {
     isInvalidAmountPay.value = true
     return
@@ -200,8 +200,8 @@ async function evaluateSwap() {
 
   if (
     receiveToken.value.value === undefined ||
-    receiveToken.value.value <= 0 ||
-    isNaN(receiveToken.value.value)
+    Number(receiveToken.value.value) <= 0 ||
+    isNaN(Number(receiveToken.value.value))
   ) {
     isInvalidAmountReceive.value = true
     return

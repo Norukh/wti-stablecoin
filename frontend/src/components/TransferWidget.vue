@@ -33,13 +33,13 @@ const transactionHash = ref('')
 
 type Transfer = {
   recipientAddress: string
-  amount: number | undefined
+  amount: string
   symbol: string
 }
 
 const transferInfo = ref<Transfer>({
   recipientAddress: '',
-  amount: undefined,
+  amount: '',
   symbol: 'WTIST'
 })
 
@@ -72,15 +72,15 @@ async function openApproveDialog() {
 
   if (
     transferInfo.value.amount === undefined ||
-    transferInfo.value.amount <= 0 ||
-    isNaN(transferInfo.value.amount)
+    Number(transferInfo.value.amount) <= 0 ||
+    isNaN(Number(transferInfo.value.amount))
   ) {
     isInvalidAmount.value = true
     console.error('Invalid transfer amount')
     return
   }
 
-  if (transferInfo.value.amount && props.balance && props.balance < transferInfo.value.amount) {
+  if (transferInfo.value.amount && props.balance && props.balance < Number(transferInfo.value.amount)) {
     isInsufficientBalance.value = true
     console.error('Insufficient balance')
     return
@@ -243,11 +243,11 @@ function wtiToUsd(wti: number) {
         <Message
           severity="info"
           size="small"
-          v-if="transferInfo.amount !== undefined && transferInfo.amount > 0 && !transactionHash"
+          v-if="transferInfo.amount !== undefined && Number(transferInfo.amount) > 0 && !transactionHash"
         >
           <p>
             Your transfer is equal to {{ transferInfo.amount }} barrels of oil and to ${{
-              wtiToUsd(transferInfo.amount)
+              wtiToUsd(Number(transferInfo.amount))
             }}.
           </p>
         </Message>
@@ -310,7 +310,7 @@ function wtiToUsd(wti: number) {
         </tr>
         <tr>
           <td class="font-bold">USD Equivalent:</td>
-          <td>${{ wtiToUsd(transferInfo.amount) }}</td>
+          <td>${{ wtiToUsd(Number(transferInfo.amount)) }}</td>
         </tr>
         <tr>
           <td class="font-bold">Gas Price:</td>

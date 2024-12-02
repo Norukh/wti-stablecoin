@@ -1,15 +1,21 @@
 import time
 import requests
 import json
-import datetime
+import logging
+
+import schedule
 
 from constants import WTIST_CONTRACT_ADDRESS
+from rebalancer import rebalance_pool, rebalance_liquidity
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 infura_url = "https://arbitrum-sepolia.infura.io/v3/617c65d94c2b42d6a5845e2ebc63928a"
 contract_address = WTIST_CONTRACT_ADDRESS.lower()
 WTI_rest = 0
-#contract_address = "0x48d848f8a1d1541e82f7ed1348cf58c5d63d9fab".lower()  #Contract for testing backend
-#contract_address = "0xfF09968a22768Ae9699f89b8B051Ec78dB81aDDB".lower()
+# contract_address = "0x48d848f8a1d1541e82f7ed1348cf58c5d63d9fab".lower()  #Contract for testing backend
+# contract_address = "0xfF09968a22768Ae9699f89b8B051Ec78dB81aDDB".lower()
 
 headers = {
     "Content-Type": "application/json"
@@ -40,7 +46,8 @@ def get_latest_block():
         "params": [],
         "id": 1
     }
-    response = requests.post(infura_url, headers=headers, data=json.dumps(payload))
+    response = requests.post(
+        infura_url, headers=headers, data=json.dumps(payload))
 
     if response.status_code == 200:
         response_data = response.json()
@@ -56,10 +63,12 @@ def get_block_details(block_number):
     payload = {
         "jsonrpc": "2.0",
         "method": "eth_getBlockByNumber",
-        "params": [hex(block_number), True],  # True to include full transaction objects
+        # True to include full transaction objects
+        "params": [hex(block_number), True],
         "id": 1
     }
-    response = requests.post(infura_url, headers=headers, data=json.dumps(payload))
+    response = requests.post(
+        infura_url, headers=headers, data=json.dumps(payload))
 
     if response.status_code == 200:
         response_data = response.json()
@@ -78,7 +87,8 @@ def poll_blockchain():
     amount_purchased = 0
     while True:
         new_eth_price = fetch_eth_price()
-        if new_eth_price is not None:                   #update eth price to keep correct values (sometimes None)
+        # update eth price to keep correct values (sometimes None)
+        if new_eth_price is not None:
             print(f"New ETH price: {new_eth_price}")
             current_eth_price = new_eth_price
         print("Polling for the latest block...")
@@ -96,12 +106,13 @@ def poll_blockchain():
                             if 'transactions' in block_details:
                                 for tx in block_details['transactions']:
                                     if tx['to'].lower() == contract_address:
-                                        #print(f"Transaction involving contract found in block {block_num}:")
-                                        #print(f"Tx Hash: {tx['hash']}")
-                                        #print(f"From: {tx['from']}")
-                                        #print(f"To: {tx['to']}")
-                                        #print(f"Value: {int(tx['value'], 16) / (10 ** 18)} ETH")
-                                        amount_purchased += int(tx['value'], 16) / (10 ** 18) * current_eth_price
+                                        # print(f"Transaction involving contract found in block {block_num}:")
+                                        # print(f"Tx Hash: {tx['hash']}")
+                                        # print(f"From: {tx['from']}")
+                                        # print(f"To: {tx['to']}")
+                                        # print(f"Value: {int(tx['value'], 16) / (10 ** 18)} ETH")
+                                        amount_purchased += int(tx['value'], 16) / (
+                                            10 ** 18) * current_eth_price
                 last_block = latest_block
                 one_minute_ago = int(time.time()) - 60
             current_wti_price = read_wti_price()
@@ -169,6 +180,20 @@ def adjust_oil_value(adjustment):
         print(f"Exception occurred: {e}")
 
 
+def collateral_management():
+    print("Collateral management...")
+    rebalance_liquidity()
+
+
 if __name__ == '__main__':
-    print("Starting polling script...")
-    poll_blockchain()
+    logger.info("Starting WTIST backend...")
+
+    logger.info("Schedule cron jobs...")
+    schedule.every(2).minutes.do(rebalance_pool)
+    schedule.every().hour.do(collateral_management)
+
+    rebalance_pool()
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)

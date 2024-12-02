@@ -16,7 +16,7 @@ defineProps({
           <Avatar
             :icon="icon"
             shape="circle"
-            size="small"
+            size="normal"
             style="background-color: var(--p-primary-color); color: var(--p-primary-contrast-color);"
           />
           <span class="font-bold p-2">{{ heading }}</span>

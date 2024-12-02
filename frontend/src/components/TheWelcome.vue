@@ -4,22 +4,24 @@ import WelcomeItem from './WelcomeItem.vue'
 
 <template>
   <div class="flex flex-col justify-items-start items-center gap-4">
-    <WelcomeItem icon="pi pi-book" heading="Documentation">
-      Vue’s
-      <a href="https://vuejs.org/" target="_blank" rel="noopener">official documentation</a>
-      provides you with all information you need to get started.
+    <WelcomeItem icon="pi pi-money-bill" heading="Collaterization">
+      The Western Texas Intermediate Stablecoin (WTIST) is collaterized by oil assets and backed by the
+      USDC stablecoin to ensure stability and security for all users.
     </WelcomeItem>
 
-    <WelcomeItem icon="pi pi-cog" heading="Tooling">
-      The Vue CLI is a globally installed npm package and provides the vue command in your terminal.
+    <WelcomeItem icon="pi pi-equals" heading="Stabilization">
+      We stabilize the Western Texas Intermediate Stablecoin (WTIST) by backing it with oil assets
+      and using automated offchain processes that keep the price stable at all times.
     </WelcomeItem>
 
-    <WelcomeItem icon="pi pi-sitemap" heading="Ecosystem">
-      The Vue ecosystem is constantly growing and evolving. Check out the official
-      <a href="https://vuejs.org/v3/guide/ecosystem.html" target="_blank" rel="noopener"
-        >Vue ecosystem guide</a
-      >
-      to find tools and libraries to help you build your next project.
+    <WelcomeItem icon="pi pi-sitemap" heading="Distributed Finance">
+      Our coin swap feature allows you to swap your USDC with the Western Texas Intermediate Stablecoin (WTIST) 
+      and buy oil assets on the blockchain.
+    </WelcomeItem>
+
+    <WelcomeItem icon="pi pi-users" heading="Availability">
+      Our goal is to provide a stablecoin that is available to everyone, regardless of their location or financial status.
+      Invest in oil assets on-chain to invest in one of the most traded commodities in the world.
     </WelcomeItem>
   </div>
 </template>

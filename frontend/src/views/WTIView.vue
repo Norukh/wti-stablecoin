@@ -3,6 +3,7 @@ import { ethers, formatEther, formatUnits } from 'ethers'
 import { ref } from 'vue'
 import { USDC_CONTRACT_ADDRESSES, WTIST_CONTRACT_ADDRESSES } from '@/utils/constants'
 import Toast from 'primevue/toast'
+import { oilService } from '../services/oil.service'
 
 import SwapWidget from '@/components/SwapWidget.vue'
 import TransferWidget from '@/components/TransferWidget.vue'
@@ -28,6 +29,7 @@ const account = ref(null)
 const balance = ref('')
 const gasPrice = ref('')
 
+const barrelsInUSD = ref('')
 const swapVisible = ref(false)
 
 async function checkMetamask() {
@@ -57,6 +59,8 @@ async function connectWallet() {
   let bal = await contract.balanceOf(account.value)
   balance.value = formatEther(bal)
 
+  barrelsInUSD.value = await calculateBarrels(Number(formatEther(bal)))
+
   const unformattedGasPrice = (await provider.getFeeData()).gasPrice
   gasPrice.value = formatUnits(unformattedGasPrice, 'gwei')
 }
@@ -85,8 +89,10 @@ async function disconnectWallet() {
   provider = null
   account.value = null
   balance.value = ''
-  store.setAccount('')
-  store.setBalance('')
+}
+
+async function calculateBarrels(wtist: number) {
+  return "$ " + oilService.calculateBarrelsInUSD(wtist)
 }
 </script>
 
@@ -124,13 +130,12 @@ async function disconnectWallet() {
           <Tab value="0">Start</Tab>
           <Tab value="1">Swap</Tab>
           <Tab value="2">Transfer</Tab>
-          <Tab value="3">Stats and Charts</Tab>
         </TabList>
         <TabPanels class="w-full m-auto">
           <TabPanel value="0">
             <Card>
               <template #title>
-                <Avatar icon="pi pi-ethereum" shape="circle" size="small" class="mr-2" />
+                <Avatar icon="pi pi-ethereum" shape="circle" size="normal" class="mr-2" />
                 WTIST Stablecoin DApp
               </template>
               <template #content>
@@ -159,9 +164,9 @@ async function disconnectWallet() {
                       <tr>
                         <td class="font-bold" style="width: 20vh">
                           <span class="pi pi-receipt" />
-                          Barrels of WTI
+                          Barrels of WTI (approx.)
                         </td>
-                        <td>{{ 0 }}</td>
+                        <td>{{ barrelsInUSD }}</td>
                       </tr>
                     </tbody>
                     <caption class="caption-bottom">
@@ -239,12 +244,6 @@ async function disconnectWallet() {
                   />
                 </div>
               </template>
-            </Card>
-          </TabPanel>
-          <TabPanel value="3">
-            <Card>
-              <template #title>Stats and Charts</template>
-              <template #content> </template>
             </Card>
           </TabPanel>
         </TabPanels>

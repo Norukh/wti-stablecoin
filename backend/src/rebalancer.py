@@ -71,6 +71,10 @@ def swap_tokens(tokenIn, tokenOut, amountIn, poolFee, amountOutMinimum=0, sqrtPr
         print(f"Error swapping tokens: {e}")
 
 
+def rebalance_liquidity():
+    pass
+
+
 def get_quote_price(token_in, token_out, amount_in, pool_fee=10000, sqrt_price_limit_x96=0):
     amount_out_data = quoter_contract.functions.quoteExactInputSingle({
         "tokenIn": token_in,
@@ -113,7 +117,7 @@ def rebalancing(
 ) -> Tuple[float, float]:
     logger.info(f"Target ratio: {target_ratio}")
 
-    step = 10
+    step = 0.1
     amount_in = step
     (quote_price, _) = get_quote_price(token_in,
                                        token_out, parse_units(amount_in, token_in_decimals))
@@ -126,28 +130,36 @@ def rebalancing(
     def minus(x): return x - step
     change = plus
 
-    for i in range(1, 50):
+    for i in range(1, 100):
+        logger.info("----")
+        logger.info("Amount in: " + str(amount_in))
         amount_in = change(amount_in)
+        logger.info("Amount in: " + str(amount_in))
 
         if quote_price < target_ratio:
             below = True
-            logger.info(f"Quote price below target ratio: {quote_price}")
+            logger.info(f"Quote price below target ratio: {
+                        quote_price}, {target_ratio}")
         else:
             above = True
-            logger.info(f"Quote price above target ratio: {quote_price}")
+            logger.info(f"Quote price above target ratio: {
+                        quote_price}, {target_ratio}")
 
         (quote_price, _) = get_quote_price(token_in,
                                            token_out, parse_units(amount_in, token_in_decimals))
+        logger.info(f"Quote price: {quote_price}")
+
         if below and above:
             if change == plus:
                 change = minus
             else:
                 change = plus
-            step = step // 2
+            step = step / 2
             below = False
             above = False
 
-        logger.info(f"Quote price: {quote_price}")
+        if abs(quote_price - target_ratio) < 0.001:
+            break
 
     return quote_price, amount_in
 
@@ -156,8 +168,6 @@ def rebalance_pool():
     latest_price = get_latest_price()
     target_ratio = format_units(
         latest_price["price"], latest_price["decimals"])
-
-    target_ratio = 71
 
     logger.info(f"Current WTIST target price ratio: {target_ratio}")
 
@@ -175,7 +185,7 @@ def rebalance_pool():
             logger.info(f"Current price ratio: {current_ratio}")
             logger.info(f"Target price ratio: {target_ratio}")
             logger.info(f"Price ratio deviated by {
-                        deviation:.2f}. Rebalancing...")
+                        deviation:.2%}. Rebalancing...")
 
             try:
                 # Sell WTIST, buy USDC
@@ -183,7 +193,7 @@ def rebalance_pool():
                     logger.info("Sell WTIST, buy USDC")
 
                     (quote_price, amount_in) = rebalancing(target_ratio,
-                                                        WTIST_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS, 18)
+                        WTIST_CONTRACT_ADDRESS, USDC_CONTRACT_ADDRESS, 18)
 
                     logger.info(f"Final Quote price: {quote_price}")
                     logger.info(f"Final amount in: {amount_in} WTIST")
@@ -200,13 +210,3 @@ def rebalance_pool():
             except Exception as e:
                 logger.error(f"Error rebalancing pool: {e}")
                 logger.info("Trying again in 2 minutes...")
-
-
-# Main loop
-if __name__ == "__main__":
-    logger.info("Starting rebalancer...")
-    while True:
-        rebalance_pool()
-
-        # Sleep for 2 minutes
-        time.sleep(120)

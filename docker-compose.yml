@@ -1,0 +1,42 @@
+services:
+  wtist-flask:
+    build: 
+      context: backend
+      dockerfile: Dockerfile
+    restart: always
+    command: gunicorn -w 2 -b 0.0.0.0:5500 main:app
+    networks:
+      - wtist
+    ports:
+      - "5500:5500"
+    volumes:
+      - ./src/Oil.db:/backend/src/Oil.db
+    depends_on:
+      - wtist-polling
+
+  wtist-polling:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    networks:
+      - wtist
+    env_file:
+      - backend/.env
+    restart: always
+    command: [ "sh", "-c", "PYTHONUNBUFFERED=1 python poll.py && tail -f /dev/null" ]
+    volumes:
+      - ./src/Oil.db:/backend/src/Oil.db
+
+  wtist-web:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    restart: always
+    networks:
+      - wtist
+    ports:
+      - "3500:3500"
+
+networks:
+  wtist:
+    driver: bridge

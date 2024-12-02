@@ -1,5 +1,5 @@
 # Use the official Python image from the Docker Hub
-FROM python:3.11-slim
+FROM python:3.12-alpine
 
 # Set the working directory in the container
 WORKDIR /backend/src
@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r /backend/requirements.txt
 COPY . /backend
 
 # Expose the port that Flask is using
-EXPOSE 5000
+EXPOSE 5500
 
 # Run the command to start the Flask server
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "main:app"]
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5500", "main:app"]

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Panel from 'primevue/panel'
 import Avatar from 'primevue/avatar'
+import Button from 'primevue/button'
 </script>
 
 <template>
@@ -18,7 +19,7 @@ import Avatar from 'primevue/avatar'
             <Avatar
               icon="pi pi-key"
               shape="circle"
-              size="small"
+              size="normal"
               style="
                 background-color: var(--p-success-color);
                 color: var(--p-success-contrast-color);
@@ -43,7 +44,7 @@ import Avatar from 'primevue/avatar'
             <Avatar
               icon="pi pi-share-alt"
               shape="circle"
-              size="small"
+              size="normal"
               style="
                 background-color: var(--p-success-color);
                 color: var(--p-success-contrast-color);
@@ -57,6 +58,26 @@ import Avatar from 'primevue/avatar'
           The WTI Stablecoin DApp is built on the Ethereum blockchain, which is a public and
           transparent blockchain.
         </p>
+
+        <Button
+          as="a"
+          label="WTI Stablecoin Github Repository"
+          href="https://github.com/Norukh/wti-stablecoin"
+          target="_blank"
+          rel="noopener"
+          class="mt-4"
+          icon="pi pi-github"
+        />
+
+        <Button
+          as="a"
+          label="WTIST Coin Contract on Sepolia Arbiscan"
+          href="https://sepolia.arbiscan.io/token/0x58c653f1d11c3d334c3ee8fe813f4d0a5d5b4a9f"
+          target="_blank"
+          rel="noopener"
+          class="mt-4"
+          icon="pi pi-ethereum"
+        />
       </Panel>
     </div>
   </div>

@@ -1,3 +1,5 @@
+![WTIST Stablecoin](./assets/wtist-no-bg.png)
+
 # Western Texas Intermediate Stablecoin
 
 Symbol: _WTIST_
@@ -186,6 +188,12 @@ The documentation of the REST API is as follows for the python API:
 | GET        | /price        | Fetches the current price of WTI/USD from a Chainlink data feed     |
 
 ### Frontend
+
+![App Home](./assets/screenshots/1.png)
+![App Swapping Tokens](./assets/screenshots/2.png)
+![App Successful Swap](./assets/screenshots/3.png)
+![App Transfer Tokens to an address](./assets/screenshots/4.png)
+
 **Technologies used:** Node, Vue.js, Vite, Typescript, [ethers.js (v6)](https://docs.ethers.org/v6/), [PrimeVue](https://primevue.org/)
 
 The frontend is built as a single page application (SPA). It interacts with the backend by API calls with the axios library and by the ethers library with the blockchain.

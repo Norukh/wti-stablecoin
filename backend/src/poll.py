@@ -31,7 +31,7 @@ if __name__ == '__main__':
     logger.info("Starting WTIST backend...")
 
     logger.info("Schedule cron jobs...")
-    schedule.every(5).minutes.do(rebalance_pool)
+    schedule.every().minutes.do(rebalance_pool)
     schedule.every().minutes.do(collateral_management)
 
     rebalance_pool()

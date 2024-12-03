@@ -46,16 +46,19 @@ def swap_tokens(token_in, token_out, amount_in, pool_fee, amount_out_min,
     try:
         nonce = web3.eth.get_transaction_count(account.address)
 
+        input_dict = {
+            'tokenIn': token_in,
+            'tokenOut': token_out,
+            'fee': pool_fee,
+            'recipient': account.address,
+            'amountIn': amount_in,
+            'amountOutMinimum': amount_out_min,
+            'sqrtPriceLimitX96': sqrtPriceLimitX96
+        }
+        logger.info(f"Swap input dict: {input_dict}")
+
         transaction = swap_contract.functions.exactInputSingle(
-            {
-                'tokenIn': token_in,
-                'tokenOut': token_out,
-                'fee': pool_fee,
-                'recipient': account.address,
-                'amountIn': amount_in,
-                'amountOutMinimum': amount_out_min,
-                'sqrtPriceLimitX96': sqrtPriceLimitX96
-            }
+            input_dict
         ).build_transaction({
             'chainId': CHAIN_ID,
             'from': account.address,
@@ -118,11 +121,14 @@ def rebalancing(
 ) -> Tuple[float, float, float]:
     logger.info(f"Target ratio: {target_ratio}")
 
-    step = 0.1
+    step = 1
     amount_in = step
     (quote_price, amount_out) = get_quote_price(token_in,
                                                 token_out, parse_units(amount_in, token_in_decimals))
     logger.info(f"Initial quote price: {quote_price}")
+
+    step = 10 if (abs(quote_price - target_ratio) >
+                  5) else abs(quote_price - target_ratio) / 2
 
     below = False
     above = False
@@ -138,6 +144,8 @@ def rebalancing(
             below = True
         else:
             above = True
+
+        amount_in = change(amount_in)
 
         (quote_price, amount_out) = get_quote_price(token_in,
                                                     token_out, parse_units(amount_in, token_in_decimals))
@@ -210,10 +218,25 @@ def rebalance_pool():
                     amount_out_min = parse_units(
                         format_units(amount_out, 6) * 0.9, 6)
 
-                    wtist_contract.functions.approve(
-                        SWAP_ROUTER_02_ADDRESS, amount_in).build_transaction(
-                        {"from": account.address}
-                    )
+                    nonce = web3.eth.get_transaction_count(account.address)
+                    approve_tx = wtist_contract.functions.approve(
+                        SWAP_ROUTER_02_ADDRESS, amount_in).build_transaction({
+                            'chainId': CHAIN_ID,
+                            'from': account.address,
+                            'nonce': nonce,
+                            'gasPrice': web3.eth.gas_price,
+                            'gas': 30000000
+                        })
+
+                    signed_txn = web3.eth.account.sign_transaction(
+                        approve_tx, private_key=PRIVATE_KEY)
+
+                    approve_tx_hash = web3.eth.send_raw_transaction(
+                        signed_txn.raw_transaction)
+
+                    logger.info(f"Approval transaction hash: {
+                                web3.to_hex(approve_tx_hash)}")
+                    web3.eth.wait_for_transaction_receipt(approve_tx_hash)
 
                 # Sell USDC, buy WTIST
                 else:
@@ -235,10 +258,25 @@ def rebalance_pool():
                     amount_out_min = parse_units(
                         format_units(amount_out, 18) * 0.9, 18)
 
-                    usdc_contract.functions.approve(
-                        SWAP_ROUTER_02_ADDRESS, amount_in).build_transaction(
-                        {"from": account.address}
-                    )
+                    nonce = web3.eth.get_transaction_count(account.address)
+                    approve_tx = usdc_contract.functions.approve(
+                        SWAP_ROUTER_02_ADDRESS, amount_in).build_transaction({
+                            'chainId': CHAIN_ID,
+                            'from': account.address,
+                            'nonce': nonce,
+                            'gasPrice': web3.eth.gas_price,
+                            'gas': 30000000
+                        })
+
+                    signed_txn = web3.eth.account.sign_transaction(
+                        approve_tx, private_key=PRIVATE_KEY)
+
+                    approve_tx_hash = web3.eth.send_raw_transaction(
+                        signed_txn.raw_transaction)
+
+                    logger.info(f"Approval transaction hash: {
+                                web3.to_hex(approve_tx_hash)}")
+                    web3.eth.wait_for_transaction_receipt(approve_tx_hash)
 
                 if quote_price is not None and abs(quote_price - target_ratio) < 5:
                     logger.info("Swapping tokens...")

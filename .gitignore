@@ -26,3 +26,7 @@ ignition/deployments/chain-31337
 *.pyo
 *.pyd
 __pycache__
+
+.DS_Store
+.idea/
+.mypy_cache/
